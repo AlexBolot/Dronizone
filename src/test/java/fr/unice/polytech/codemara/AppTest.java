@@ -16,8 +16,5 @@ public class AppTest {
     public void contextLoads() {
     }
 
-    @Test
-    public void travisShouldFail() {
-        fail("Failing travis");
-    }
+
 }

@@ -7,4 +7,5 @@ matrix:
         - rm "${JAVA_HOME}/lib/security/cacerts"
         - ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
 script:
-  mvn install
+  - mvn install
+  - sonar-scanner -D sonar.host.url=sonar.galles.io
