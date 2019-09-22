@@ -18,6 +18,6 @@ public class AppTest {
 
     @Test
     public void travisShouldFail() {
-        fail("Failing Travis ");
+        fail("Failing Travis");
     }
 }
