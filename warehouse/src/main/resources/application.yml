@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/dronazone
+    username: dronazone
+    password: dronazone
+  batch:
+    initialize-schema: always
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    generate-ddl: true
+

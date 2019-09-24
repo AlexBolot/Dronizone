@@ -1,0 +1,37 @@
+version: '3'
+services:
+  warehouse-server:
+    container_name: dronazone-warehouse-server
+    build:
+      context: warehouse
+      dockerfile: DOCKERFILE
+      args:
+        JAR_FILE: target/wharehouse-0.0.1-SNAPSHOT.jar
+    image: dronazone-warehouse-server:latest
+    expose:
+      - 8081
+    ports:
+      - 8081:8080
+    networks:
+      - dronazone-network
+    logging:
+      driver: json-file
+    depends_on:
+      - postgres
+    links:
+      - postgres
+  postgres:
+    container_name: postgres-dronazone
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: dronazone
+      POSTGRES_USER: dronazone
+      POSTGRES_DB: dronazone
+    ports:
+      - 5432:5432
+    networks:
+      - dronazone-network
+
+networks:
+  dronazone-network:
+    driver: bridge
