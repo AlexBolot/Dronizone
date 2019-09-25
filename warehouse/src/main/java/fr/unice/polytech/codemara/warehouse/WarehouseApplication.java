@@ -1,13 +1,13 @@
-package fr.unice.polytech.codemara.wharehouse;
+package fr.unice.polytech.codemara.warehouse;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class WharehouseApplication {
+public class WarehouseApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(WharehouseApplication.class, args);
+		SpringApplication.run(WarehouseApplication.class, args);
 	}
 
 }
