@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/dronazone
-    username: dronazone
-    password: dronazone
+    url: jdbc:postgresql://localhost:5432/dronazone
+    username: postgres
+    password: azerty
   batch:
     initialize-schema: always
   jpa:
