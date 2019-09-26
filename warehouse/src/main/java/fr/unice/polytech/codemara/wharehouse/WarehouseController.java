@@ -12,7 +12,6 @@ public class WarehouseController {
     public String order_ping(@PathVariable("hello") String hello){
         if (hello.equals("hello")){
             return "World";
-
         }
         return "Hello";
     }

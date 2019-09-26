@@ -20,6 +20,8 @@ services:
       - postgres
     links:
       - postgres
+    environment:
+      DATASOURCE_HOST: postgres
   postgres:
     container_name: postgres-dronazone
     image: postgres
