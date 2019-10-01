@@ -1,0 +1,1 @@
+docker run --name dronazone-postgres -e POSTGRES_PASSWORD=dronazone -e POSTGRES_USER=dronazone -d postgres

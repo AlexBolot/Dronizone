@@ -1,20 +1,16 @@
-package fr.unice.polytech.codemara;
+package fr.unice.polytech.codemara.wharehouse;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.junit.Assert.fail;
-
 @RunWith(SpringRunner.class)
 @SpringBootTest
-public class AppTest {
+public class WharehouseApplicationTests {
 
-    @Test
-    public void contextLoads() {
-    }
-
+	@Test
+	public void contextLoads() {
+	}
 
 }
