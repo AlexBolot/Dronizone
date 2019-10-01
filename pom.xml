@@ -6,6 +6,7 @@
 
     <name>Dronizone :: Root Project</name>
     <modules>
+        <module>Drone</module>
         <module>warehouse</module>
     </modules>
 
@@ -13,9 +14,6 @@
     <artifactId>dronizone-1920-soa-team-codemara</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
-    <modules>
-        <module>Drone</module>
-    </modules>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -83,7 +81,5 @@
                 </executions>
             </plugin>
         </plugins>
-
     </build>
-
 </project>

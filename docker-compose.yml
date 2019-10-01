@@ -20,6 +20,28 @@ services:
       - postgres
     links:
       - postgres
+
+  drone-server:
+    container_name: dronazone-drone-server
+    build:
+      context: drone
+      dockerfile: DOCKERFILE
+      args:
+        JAR_FILE: target/drone-0.0.1-SNAPSHOT.jar
+    image: dronazone-drone-server:latest
+    expose:
+      - 8082
+    ports:
+      - 8082:8080
+    networks:
+      - dronazone-network
+    logging:
+      driver: json-file
+    depends_on:
+      - postgres
+    links:
+      - postgres
+
   postgres:
     container_name: postgres-dronazone
     image: postgres
