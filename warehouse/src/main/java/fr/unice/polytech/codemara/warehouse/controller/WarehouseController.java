@@ -13,16 +13,11 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 public class WarehouseController {
     @GetMapping("/{hello}")
 
-    public String order_ping(@PathVariable("hello") String hello) {
-        if (hello.equals("hello")) {
-            return "World";
 
-        }
-        return "Hello";
-    }
-
-    @RequestMapping(method = GET, path = "/pending")
+    @RequestMapping(method = GET, path = "/orders")
     public String getPendings() {
-        return "Warehouse.getPendings().toString()";
+        return "Order list";
     }
+
+
 }
