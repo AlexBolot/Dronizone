@@ -45,12 +45,8 @@ public class Fleet {
         builder.append("{");
         drones.forEach((id, drone) -> builder.append("\"").append(id).append("\": \"").append(drone.getBatteryLevel()).append("\","));
 
-        String dump = builder.toString();
-
         // Remove last unnecessary ","
-        dump = dump.substring(0, dump.length() - 1) + "}";
-
-        return dump;
+        return builder.toString().substring(0, builder.length() - 1) + "}";
     }
 
     private void processForDrone(String droneID, Consumer<Drone> consumer) {

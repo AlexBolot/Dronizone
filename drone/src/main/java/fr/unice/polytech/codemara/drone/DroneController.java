@@ -2,6 +2,7 @@ package fr.unice.polytech.codemara.drone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.unice.polytech.codemara.drone.entities.Drone;
 import fr.unice.polytech.codemara.drone.entities.Fleet;
 import fr.unice.polytech.codemara.drone.entities.Whereabouts;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
@@ -18,6 +22,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
 public class DroneController {
 
     private static Fleet fleet = new Fleet();
+
+    public DroneController() {
+        List<Drone> drones = new ArrayList<>();
+        for (int i = 0; i < 15; i++) drones.add(new Drone("aaa" + i, new Random().nextInt(100)));
+
+        fleet = new Fleet(drones);
+    }
 
     /**
      * Route dedicated to ask for the fleet's battery statuses
@@ -81,10 +92,6 @@ public class DroneController {
         Whereabouts whereabouts = new ObjectMapper().readValue(whereaboutsJson, Whereabouts.class);
 
         fleet.updateData(droneId, batteryLevel, whereabouts);
-
-        System.out.println(whereabouts.getLatitude());
-        System.out.println(whereabouts.getLongitude());
-        System.out.println(batteryLevel);
 
         if (whereabouts.getDistanceToTarget() < 200)
             System.out.println("Alert we are close to delivery zone, send notification");
