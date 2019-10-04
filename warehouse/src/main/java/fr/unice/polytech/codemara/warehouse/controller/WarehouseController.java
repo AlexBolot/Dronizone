@@ -5,7 +5,6 @@ import fr.unice.polytech.codemara.warehouse.entities.repositories.OrderRepositor
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.io.DataOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;

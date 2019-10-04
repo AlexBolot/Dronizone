@@ -1,5 +1,6 @@
-package fr.unice.polytech.codemara.wharehouse;
+package fr.unice.polytech.codemara.warehouse;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class WarehouseControllerTest {
     @Autowired
     private MockMvc mockMvc;
-
+    @Ignore("Example tests should not be ran, and deleted as soon as possible")
     @Test
     public void hello_world() throws Exception {
         mockMvc.perform(get("/warehouse/hello"))
