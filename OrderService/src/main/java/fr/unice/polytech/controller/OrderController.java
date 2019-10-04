@@ -18,9 +18,9 @@ public class OrderController {
         return "Hello";
     }
 
-    @RequestMapping(method = POST, path = "/new")
-    public Order greeting(@RequestBody String address,
-                          @RequestBody String item) {
-        return new Order(address, item);
-    }
+//    @RequestMapping(method = POST, path = "/newOrder")
+//    public Order greeting(@RequestBody String address,
+//                          @RequestBody String item) {
+//        return new Order(address, item);
+//    }
 }
