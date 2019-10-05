@@ -2,6 +2,7 @@ package fr.unice.polytech.service.impl;
 
 import com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceImpl;
 import fr.unice.polytech.entities.*;
+import fr.unice.polytech.repo.CoordRepo;
 import fr.unice.polytech.repo.CustomerRepo;
 import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
@@ -32,31 +33,31 @@ public class OrderServiceImpl implements OrderService {
     private OrderRepo orderRepo;
 
     @Autowired
+    private CoordRepo coordRepo;
+
+    @Autowired
     private RestTemplate restTemplate;
 
     @Autowired
     private Environment env;
 
     @Override
-    public Order orderItem(int itemId, int customerId, String lon, String lat, String paymentInfo) {
-//        itemRepo.save(new Item(0, "Persona 5"));
-//        customerRepo.save(new Customer(0, "Gohu", "Francois"));
+    public Order orderItem(Order order) {
+        order.setStatus(Status.PENDING);
 
-        Customer c = customerRepo.findCustomerById(customerId);
-        Item i = itemRepo.findItemById(itemId);
-
-        Order order = new Order(0, new Coord(lon, lat), i, Status.PENDING, c, paymentInfo);
-
+        itemRepo.save(order.getItem());
+        customerRepo.save(order.getCustomer());
+        coordRepo.save(order.getCoord());
         orderRepo.save(order);
 
 //        restTemplate.postForObject(WAREHOUSE_URL, order, String.class);
 
         StringBuilder stringBuilder = new StringBuilder("{");
         stringBuilder.append("\"order_id\":\"").append(order.getId()).append("\",");
-        stringBuilder.append("\"item_id\":\"").append(itemId).append("\",");
-        stringBuilder.append("\"lat\":\"").append(lat).append("\",");
-        stringBuilder.append("\"lon\":\"").append(lon).append("\",");
-        stringBuilder.append("\"customer_id\":\"").append(customerId).append("\"}");
+        stringBuilder.append("\"item_id\":\"").append(order.getItem()).append("\",");
+        stringBuilder.append("\"lat\":\"").append(order.getCoord().getLat()).append("\",");
+        stringBuilder.append("\"lon\":\"").append(order.getCoord().getLon()).append("\",");
+        stringBuilder.append("\"customer_id\":\"").append(order.getCustomer().getId()).append("\"}");
 
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(WAREHOUSE_URL).openConnection();

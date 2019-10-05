@@ -25,8 +25,7 @@ public class Order {
 
     public Order() {}
 
-    public Order(int id, Coord coord, Item item, Status status, Customer customer, String paymentInfo) {
-        this.id = id;
+    public Order(Coord coord, Item item, Status status, Customer customer, String paymentInfo) {
         this.coord = coord;
         this.item = item;
         this.status = status;
@@ -34,7 +33,7 @@ public class Order {
         this.paymentInfo = paymentInfo;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
