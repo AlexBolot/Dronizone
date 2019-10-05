@@ -20,6 +20,9 @@ services:
       - postgres
     links:
       - postgres
+    environment:
+      DATASOURCE_HOST: postgres
+      NOTIFICATION_HOST: notification
 
   drone-server:
     container_name: dronazone-drone-server
@@ -53,6 +56,22 @@ services:
       - 5432:5432
     networks:
       - dronazone-network
+  notification:
+    container_name: dronazone-notification-mock-server
+    build:
+      context: mock_notification_service
+      dockerfile: DOCKERFILE
+      args:
+        JAR_FILE: target/mock_notification_service-0.0.1-SNAPSHOT.jar
+    image: dronizone-mock-notification
+    expose:
+      - 8080
+    ports:
+      - 44444:8080
+    networks:
+      - dronazone-network
+    logging:
+      driver: json-file
 
 networks:
   dronazone-network:

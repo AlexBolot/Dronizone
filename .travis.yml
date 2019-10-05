@@ -1,5 +1,7 @@
 language: java
 jdk: oraclejdk9
+services:
+  - docker
 matrix:
   include:
     - jdk: openjdk9
@@ -8,4 +10,9 @@ matrix:
         - ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
 script:
   - mvn install
+  - cd mock_notification_service
+  - mvn clean install
+  - cd ../
+  - docker-compose up -d
+  - docker-compose down
   - mvn clean verify sonar:sonar -Pcoverage -Dsonar.host.url=http://sonar.galles.io
