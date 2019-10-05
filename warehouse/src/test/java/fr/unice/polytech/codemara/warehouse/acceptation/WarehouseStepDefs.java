@@ -9,8 +9,12 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.verify.VerificationTimes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -23,7 +27,11 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,6 +41,10 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
     private ResultActions last_query;
     @Autowired
     OrderRepository orderRepository;
+    @Autowired
+    Environment environment;
+    private MockServerClient mockServer;
+    private ClientAndServer clientServer;
 
     @Given("^A basic order list$")
     public void aBasicOrderList() {
@@ -63,8 +75,8 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
     }
 
     @Then("^The client receives a (\\d+) status code$")
-    public void theClientReceivesAStatusCode(int arg0) throws Exception {
-        this.last_query.andExpect(status().isOk());
+    public void theClientReceivesAStatusCode(int expected_status) throws Exception {
+        this.last_query.andExpect(status().is(expected_status));
     }
 
     @And("^The client receives the basic order list$")
@@ -74,7 +86,42 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
         assertNotEquals("[]", body);
         ObjectMapper jsonMapper = new ObjectMapper();
         String expectedJson = jsonMapper.writeValueAsString(this.orders);
-        assertEquals(expectedJson,body);
+        assertEquals(expectedJson, body);
     }
 
+    @And("A mocked drone server")
+    public void aMockedDroneServer() {
+        int serverPort = 20000;
+        System.setProperty("DRONE_HOST","http://localhost:20000");
+        this.clientServer = startClientAndServer(serverPort);
+        mockServer = new MockServerClient("localhost", serverPort);
+
+        mockServer
+                .when(
+                        request()
+                                .withMethod("POST")
+                                .withPath("/")
+                )
+                .respond(
+                        response()
+                                .withStatusCode(200)
+                                .withBody("Pickup on it's way")
+                );
+        ;
+    }
+
+    @When("Klaus sets a query ready for delivery")
+    public void klausSetsAQueryReadyForDelivery() throws Exception {
+
+        this.last_query = mockMvc.perform(put("/warehouse/orders/1"));
+    }
+
+    @And("The mock drone server receives a post query")
+    public void theMockDroneServerReceivesAPostQuery() {
+        this.mockServer.verify(
+                request()
+                        .withPath("/"),
+                VerificationTimes.once()
+        );
+    }
 }
