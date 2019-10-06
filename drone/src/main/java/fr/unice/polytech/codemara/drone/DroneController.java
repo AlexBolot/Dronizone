@@ -10,12 +10,11 @@ import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
 import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import sun.security.krb5.internal.ktab.KeyTab;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Optional;
 
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
@@ -62,7 +61,7 @@ public class DroneController {
         drone.ifPresent(d -> {
             d.setDroneStatus(DroneStatus.valueOf(status));
             droneRepository.save(d);
-        } );
+        });
     }
 
     /**

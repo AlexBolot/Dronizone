@@ -1,6 +1,5 @@
 package fr.unice.polytech.codemara.drone.entities;
 
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +7,8 @@ import lombok.Setter;
 
 import javax.persistence.*;
 
+@Getter
+@Setter
 @Data
 @Entity
 @RequiredArgsConstructor
@@ -22,11 +23,11 @@ public class Drone {
     @OneToOne
     public Delivery currentDelivery;
 
-    public Drone( double batteryLevel) {
+    public Drone(double batteryLevel) {
         this.batteryLevel = batteryLevel;
     }
 
-    boolean is(DroneStatus status) {
+    public boolean is(DroneStatus status) {
         return droneStatus == status;
     }
 }
