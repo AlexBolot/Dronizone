@@ -16,7 +16,7 @@ import java.net.URL;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
-@RequestMapping(path = "/order", produces = "application/json")
+@RequestMapping(path = "/order/notify", produces = "application/json")
 public class OrderController {
 
     private static final String WAREHOUSE_URL = "http://localhost:8080/notify";

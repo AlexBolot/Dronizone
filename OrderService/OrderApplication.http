@@ -23,15 +23,16 @@ Content-Type: application/json
         "lat": "0"
       },
       "customer": {
-        "name": "Francois",
-        "firstName": "Gohu"
+        "name": "Roger",
+        "firstName": "Regor"
       },
       "paymentInfo": "Bla bla"
     }
   }
 }
+
 ###
-GET http://localhost:8080/order/ping/2/3
+GET http://localhost:8080/order/notify/ping/2/3
 Accept: application/json
 
 ###

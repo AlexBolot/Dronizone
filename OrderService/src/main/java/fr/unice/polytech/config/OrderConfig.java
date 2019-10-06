@@ -29,5 +29,4 @@ public class OrderConfig {
         return builder.build();
     }
 
-
 }
