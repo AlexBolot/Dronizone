@@ -7,6 +7,8 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
+//@Entity
+//@Data
 public class Whereabouts {
     private double latitude;
     private double longitude;

@@ -9,7 +9,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static fr.unice.polytech.codemara.drone.entities.DroneStatus.ACTIVE;
+import static fr.unice.polytech.codemara.drone.entities.Drone.*;
+import static fr.unice.polytech.codemara.drone.entities.Drone.Status.ACTIVE;
 
 @Getter
 @Setter
@@ -17,10 +18,7 @@ public class Fleet {
 
     private Map<String, Drone> drones = new HashMap<>();
 
-    public Fleet() {
-    }
-
-    public Fleet(List<Drone> drones) {
+    public Fleet(Iterable<Drone> drones) {
         drones.forEach(drone -> this.drones.put(drone.getDroneID(), drone));
     }
 
@@ -29,7 +27,7 @@ public class Fleet {
     }
 
     public void changeStatus(String droneID, String status) {
-        DroneStatus.find(status).ifPresent(droneStatus -> processForDrone(droneID, (drone -> drone.setDroneStatus(droneStatus))));
+        Status.find(status).ifPresent(droneStatus -> processForDrone(droneID, (drone -> drone.setStatus(droneStatus))));
     }
 
     public void updateData(String droneID, double batteryLevel, Whereabouts data) {

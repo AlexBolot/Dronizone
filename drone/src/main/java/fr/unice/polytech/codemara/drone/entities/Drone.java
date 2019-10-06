@@ -3,13 +3,19 @@ package fr.unice.polytech.codemara.drone.entities;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Optional;
+
 @Getter
 @Setter
-public
-class Drone {
+//@Entity
+//@Data
+public class Drone {
+
+    //@Id
+    //@GeneratedValue(strategy = GenerationType.AUTO)
     private String droneID;
     private double batteryLevel;
-    private DroneStatus droneStatus;
+    private Status status;
     private Whereabouts whereabouts;
 
     public Drone() {
@@ -20,7 +26,21 @@ class Drone {
         this.batteryLevel = batteryLevel;
     }
 
-    boolean is(DroneStatus status) {
-        return droneStatus == status;
+    boolean is(Status status) {
+        return this.status == status;
+    }
+
+    public enum Status {
+        ACTIVE,
+        CALLED_HOME,
+        ASIDE;
+
+        public static Optional<Status> find(String statusName) {
+            try {
+                return Optional.of(Status.valueOf(statusName.toUpperCase()));
+            } catch (IllegalArgumentException iae) {
+                return Optional.empty();
+            }
+        }
     }
 }

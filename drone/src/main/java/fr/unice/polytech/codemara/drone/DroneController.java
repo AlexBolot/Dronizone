@@ -21,12 +21,21 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
 @RequestMapping(path = "/drone", produces = "application/json")
 public class DroneController {
 
-    private static Fleet fleet = new Fleet();
+    //private final Environment env;
+    //private final DroneRepository droneRepository;
+    private static Fleet fleet;
+
+    /*public DroneController(Environment env, DroneRepository droneRepository) {
+        this.env = env;
+        this.droneRepository = droneRepository;
+
+        this.fleet = new Fleet(droneRepository.findAll());
+    }*/
 
     public DroneController() {
+        Random random = new Random();
         List<Drone> drones = new ArrayList<>();
-        for (int i = 0; i < 15; i++) drones.add(new Drone("aaa" + i, new Random().nextInt(100)));
-
+        for (int i = 0; i < 15; i++) drones.add(new Drone("droneID" + i, random.nextInt(100)));
         fleet = new Fleet(drones);
     }
 
