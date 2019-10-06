@@ -29,6 +29,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
@@ -94,7 +95,7 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
     @And("A mocked drone server")
     public void aMockedDroneServer() {
         int serverPort = 20000;
-        System.setProperty("DRONE_HOST", "http://localhost:20000");
+        System.setProperty("DRONE_HOST", "http://localhost:20000/");
         this.clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
 

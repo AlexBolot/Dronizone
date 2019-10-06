@@ -1,5 +1,6 @@
 package fr.unice.polytech.codemara.drone;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.entities.Whereabouts;
 import org.junit.Test;
@@ -25,13 +26,13 @@ public class DroneControllerTest {
     @Test
     public void update_battery_status() throws Exception {
 
-        String myjson = "{\"droneID\":\"aaa2\", \"battery_level\":80, \"whereabouts\":{\"latitude\":1.33, \"longitude\":3.456, \"altitude\":12, \"distanceToTarget\":250}}";
-
+        String myjson = "{\"droneID\":\"aaa2\", \"battery_level\":80, \"whereabouts\":{\"location\":{\"latitude\":10.0,\"longitude\":10.0}, \"altitude\":12, \"distanceToTarget\":250}}";
+        JsonNode tree = new ObjectMapper().readTree(myjson);
         Whereabouts data = new Whereabouts();
         data.setAltitude(12);
         //data.setBatteryLevel(85);
-        data.setLatitude(12.1324);
-        data.setLongitude(4.3456);
+        data.getLocation().setLatitude(12.1324);
+        data.getLocation().setLongitude(4.3456);
         data.setDistanceToTarget(500);
 
         ObjectMapper mapper = new ObjectMapper();

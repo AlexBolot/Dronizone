@@ -1,28 +1,28 @@
 package fr.unice.polytech.codemara.drone.entities;
 
+import jdk.nashorn.internal.ir.annotations.Ignore;
+import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
-import java.util.Optional;
+import javax.persistence.*;
 
-@Getter
-@Setter
-//@Entity
-//@Data
+@Data
+@Entity
+@RequiredArgsConstructor
 public class Drone {
-
-    //@Id
-    //@GeneratedValue(strategy = GenerationType.AUTO)
-    private String droneID;
+    @Id
+    @GeneratedValue
+    private long droneID;
     private double batteryLevel;
     private Status status;
+    @ManyToOne
     private Whereabouts whereabouts;
+    @OneToOne
+    public Delivery currentDelivery;
 
-    public Drone() {
-    }
-
-    public Drone(String droneID, double batteryLevel) {
-        this.droneID = droneID;
+    public Drone( double batteryLevel) {
         this.batteryLevel = batteryLevel;
     }
 

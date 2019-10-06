@@ -1,18 +1,24 @@
 package fr.unice.polytech.codemara.drone.entities;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
+import org.aspectj.lang.annotation.DeclareAnnotation;
 
-@Getter
-@Setter
-@ToString
-//@Entity
-//@Data
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+
+@Entity
+@Data
 public class Whereabouts {
-    private double latitude;
-    private double longitude;
+    @Id
+    @GeneratedValue
+    private long id;
+    private Location location;
     private double altitude;
     private double distanceToTarget;
+
+    public Whereabouts() {
+        this.location = new Location();
+    }
 }
 
