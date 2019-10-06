@@ -6,7 +6,7 @@
 
     <name>Dronizone :: Root Project</name>
     <modules>
-        <module>Drone</module>
+        <module>drone</module>
         <module>warehouse</module>
     </modules>
 
