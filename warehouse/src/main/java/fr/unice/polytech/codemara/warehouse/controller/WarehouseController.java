@@ -3,7 +3,9 @@ package fr.unice.polytech.codemara.warehouse.controller;
 import fr.unice.polytech.codemara.warehouse.entities.CustomerOrder;
 import fr.unice.polytech.codemara.warehouse.entities.repositories.OrderRepository;
 import org.springframework.core.env.Environment;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.DataOutputStream;
 import java.io.UnsupportedEncodingException;
@@ -29,8 +31,8 @@ public class WarehouseController {
     }
 
     @GetMapping("/orders")
-    public String getAllOrders() {
-        return orderRepository.findAll().toString();
+    public Iterable<CustomerOrder> getAllOrders() {
+        return orderRepository.findAll();
     }
 
     @PostMapping("/orders")
@@ -52,42 +54,18 @@ public class WarehouseController {
         }
         try {
             URL url = new URL(env.getProperty("DRONE_HOST"));
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("POST");
+            RestTemplate restTemplate = new RestTemplate();
             Map<String, String> parameters = new HashMap<>();
             parameters.put("orderid", "id");
-            con.setDoOutput(true);
-            DataOutputStream out = new DataOutputStream(con.getOutputStream());
-            out.writeBytes(ParameterStringBuilder.getParamsString(parameters));
-            out.flush();
-            out.close();
+            ResponseEntity<String> response
+                    = restTemplate.postForEntity(url.toString(),parameters, String.class);
+            System.out.println("response = " + response);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return "Message envoyé à un autre service <3";
+        return "Message envoyé à un autre service";
     }
 
-    /**Source
-     * https://www.baeldung.com/java-http-request
-     */
-    static class ParameterStringBuilder {
-        public static String getParamsString(Map<String, String> params)
-                throws UnsupportedEncodingException {
-            StringBuilder result = new StringBuilder();
-
-            for (Map.Entry<String, String> entry : params.entrySet()) {
-                result.append(URLEncoder.encode(entry.getKey(), "UTF-8"));
-                result.append("=");
-                result.append(URLEncoder.encode(entry.getValue(), "UTF-8"));
-                result.append("&");
-            }
-
-            String resultString = result.toString();
-            return resultString.length() > 0
-                    ? resultString.substring(0, resultString.length() - 1)
-                    : resultString;
-        }
-    }
 
 }

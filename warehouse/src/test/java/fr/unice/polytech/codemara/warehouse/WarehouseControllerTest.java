@@ -21,6 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class WarehouseControllerTest {
     @Autowired
     private MockMvc mockMvc;
+
+    //This test must remain or else Spring crashes if the class is empty
     @Ignore("Example tests should not be ran, and deleted as soon as possible")
     @Test
     public void hello_world() throws Exception {
