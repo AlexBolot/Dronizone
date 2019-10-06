@@ -13,6 +13,9 @@ import io.cucumber.java.en.When;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.verify.VerificationTimes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.core.env.Environment;
@@ -49,8 +52,11 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
     private MockServerClient mockServer;
     private ClientAndServer clientServer;
 
+    private static final Logger logger = LoggerFactory.getLogger(WarehouseStepDefs.class);
+
     @Given("^A basic order list$")
     public void aBasicOrderList() {
+        logger.info("######################## Soit une liste de commandes simples ########################");
         orders = Arrays.asList(
                 new CustomerOrder(),
                 new CustomerOrder(),
@@ -72,6 +78,7 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
 
     @When("^Klaus queries the pending dispatch list$")
     public void klausQueriesThePendingDispathList() throws Exception {
+        logger.info("######################## Quand Klauss demande les listes des commandes a preparer ########################");
         this.last_query = mockMvc.perform(get("/warehouse/orders"))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
                 .andExpect(status().isOk());
@@ -79,11 +86,13 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
 
     @Then("^The client receives a (\\d+) status code$")
     public void theClientReceivesAStatusCode(int expected_status) throws Exception {
+        logger.info("######################## le code client recoit un status HTTP 200 OK ########################");
         this.last_query.andExpect(status().is(expected_status));
     }
 
     @And("^The client receives the basic order list$")
     public void theClientReceivesTheBasicOrderList() throws UnsupportedEncodingException, JsonProcessingException {
+        logger.info("######################## et le code client recoit la liste de commandes a preparer. ########################");
         MvcResult result = this.last_query.andReturn();
         String body = result.getResponse().getContentAsString();
         assertNotEquals("[]", body);
@@ -94,6 +103,7 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
 
     @And("A mocked drone server")
     public void aMockedDroneServer() {
+        logger.info("######################## et un serveur de drone mocke. ########################");
         int serverPort = 20000;
         System.setProperty("DRONE_HOST", "http://localhost:20000/");
         this.clientServer = startClientAndServer(serverPort);
@@ -115,11 +125,13 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
 
     @When("Klaus sets a query ready for delivery")
     public void klausSetsAQueryReadyForDelivery() throws Exception {
+        logger.info("######################## Quand Klaus definit une commande comme prete a la livraison ########################" );
         this.last_query = mockMvc.perform(put("/warehouse/orders/1"));
     }
 
     @And("The mock drone server receives a post query")
     public void theMockDroneServerReceivesAPostQuery() {
+        logger.info("######################## et le serveur de drone mocke recoit une requete post. ########################");
         this.mockServer.verify(
                 request()
                         .withPath("/"),

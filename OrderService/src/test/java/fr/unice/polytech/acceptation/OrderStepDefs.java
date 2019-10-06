@@ -138,6 +138,8 @@ public class OrderStepDefs extends SpringCucumberStepDef {
                 .accept(MediaType.APPLICATION_JSON_UTF8))
                 .andReturn();
         mockServer.verify(request, VerificationTimes.atLeast(2));
+        mockServer.close();
+        clientServer.close();
     }
 
     public static String asJsonString(final Object obj) {
@@ -165,8 +167,8 @@ public class OrderStepDefs extends SpringCucumberStepDef {
         order = new Order(coord, item, Status.PENDING, customer, "Bla bla bla");
         orderRepo.save(order);
 
-        int serverPort = 20001;
-        System.setProperty("NOTIFY_HOST", "http://localhost:20001");
+        int serverPort = 20000;
+        System.setProperty("NOTIFY_HOST", "http://localhost:20000");
         this.clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
         request = new HttpRequest();
@@ -189,6 +191,8 @@ public class OrderStepDefs extends SpringCucumberStepDef {
     @And("^The client receives the notification that their delivery is close by$")
     public void verifyMockServer() {
         mockServer.verify(request, VerificationTimes.atLeast(1));
+        mockServer.close();
+        clientServer.close();
     }
 
 
@@ -203,8 +207,8 @@ public class OrderStepDefs extends SpringCucumberStepDef {
         order = new Order(coord, item, Status.PENDING, customer, "Bla bla bla");
         orderRepo.save(order);
 
-        int serverPort = 20002;
-        System.setProperty("NOTIFY_HOST", "http://localhost:20002");
+        int serverPort = 20000;
+        System.setProperty("NOTIFY_HOST", "http://localhost:20000");
         this.clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
         request = new HttpRequest();

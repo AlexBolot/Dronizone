@@ -15,6 +15,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping(path = "/warehouse", produces = "application/json")
@@ -22,8 +23,7 @@ public class WarehouseController {
 
     private final Environment env;
 
-    final
-    OrderRepository orderRepository;
+    final OrderRepository orderRepository;
 
     public WarehouseController(Environment env, OrderRepository orderRepository) {
         this.env = env;
