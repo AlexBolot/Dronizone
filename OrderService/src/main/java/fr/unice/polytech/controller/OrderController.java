@@ -26,7 +26,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 public class OrderController {
 
     private static final String NOTIFY_URL = "http://localhost:8080";
-    private static final String NOTIFY_PATH = "/notify";
+    private static final String NOTIFY_PATH = "/notification/customer/";
 
     @Autowired
     private ItemRepo itemRepo;
@@ -63,7 +63,7 @@ public class OrderController {
         if (notifyUrl == null) notifyUrl = NOTIFY_URL;
 
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(notifyUrl + NOTIFY_PATH, params, String.class);
+        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + order.getId() + "/order", params, String.class);
 
         return "OK";
     }
@@ -84,7 +84,7 @@ public class OrderController {
         if (notifyUrl == null) notifyUrl = NOTIFY_URL;
 
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(notifyUrl + NOTIFY_PATH, params, String.class);
+        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + order.getId() + "/order", params, String.class);
 
         return "OK";
     }
