@@ -2,6 +2,9 @@ package fr.unice.polytech.acceptation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.entities.*;
+import fr.unice.polytech.repo.CoordRepo;
+import fr.unice.polytech.repo.CustomerRepo;
+import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
 import fr.unice.polytech.service.OrderService;
 import gherkin.deps.com.google.gson.JsonElement;
@@ -14,12 +17,14 @@ import io.cucumber.java.en.When;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -42,6 +47,15 @@ public class OrderStepDefs extends SpringCucumberStepDef {
 
     @Autowired
     private OrderRepo orderRepo;
+
+    @Autowired
+    private ItemRepo itemRepo;
+
+    @Autowired
+    private CustomerRepo customerRepo;
+
+    @Autowired
+    private CoordRepo coordRepo;
 
     @Autowired
     private MockMvc mockMvc;
@@ -74,6 +88,15 @@ public class OrderStepDefs extends SpringCucumberStepDef {
 
     @Then("^The client will receive the order as confirmation$")
     public void passOrder() throws Exception {
+        int serverPort = 20000;
+        System.setProperty("WAREHOUSE_HOST", "http://localhost:20000");
+        this.clientServer = startClientAndServer(serverPort);
+        mockServer = new MockServerClient("localhost", serverPort);
+        request = new HttpRequest();
+        request.withMethod("POST").withPath("/warehouse/orders");
+        mockServer.when(request)
+                .respond(response().withStatusCode(200));
+
         JsonParser jsonParser = new JsonParser();
         s = jsonParser.parse("{\"id\": \"1\",\"jsonrpc\": \"2.0\",\"method\": \"orderItem\"}");
         JsonObject requestOrder = new JsonObject();
@@ -109,25 +132,12 @@ public class OrderStepDefs extends SpringCucumberStepDef {
 
     @And("^The Warehouse service will receive the order$")
     public void warehouseConfirmation() throws Exception {
-        int serverPort = 20000;
-        System.setProperty("WAREHOUSE_HOST", "http://localhost:20000");
-        this.clientServer = startClientAndServer(serverPort);
-        mockServer = new MockServerClient("localhost", serverPort);
-        String requestBody = "{" + "\"order_id\":\"" + orderId + "\"," +
-                "\"item_id\":\"" + itemId + "\"," +
-                "\"lat\":\"" + order.getCoord().getLat() + "\"," +
-                "\"lon\":\"" + order.getCoord().getLon() + "\"," +
-                "\"customer_id\":\"" + customerId + "\"}";
-        HttpRequest request = new HttpRequest();
-        request.withMethod("POST").withPath("/warehouse/orders").withBody(requestBody);
-        mockServer.when(request)
-                .respond(response().withStatusCode(200));
         mockMvc.perform(post("/order")
                 .content(s.toString())
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .accept(MediaType.APPLICATION_JSON_UTF8))
                 .andReturn();
-        assertNotNull(mockServer.retrieveRecordedRequests(request));
+        mockServer.verify(request, VerificationTimes.atLeast(2));
     }
 
     public static String asJsonString(final Object obj) {
@@ -136,6 +146,83 @@ public class OrderStepDefs extends SpringCucumberStepDef {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    private HttpRequest request;
+    private RequestBuilder requestBuilder;
+    private MvcResult result;
+
+
+    @Given("^A drone with a client delivery$")
+    public void setNotificationMock() {
+        item = new Item("Persona 5");
+        itemRepo.save(item);
+        customer = new Customer("Roger", "Regor");
+        customerRepo.save(customer);
+        Coord coord = new Coord("0", "0");
+        coordRepo.save(coord);
+        order = new Order(coord, item, Status.PENDING, customer, "Bla bla bla");
+        orderRepo.save(order);
+
+        int serverPort = 20001;
+        System.setProperty("NOTIFY_HOST", "http://localhost:20001");
+        this.clientServer = startClientAndServer(serverPort);
+        mockServer = new MockServerClient("localhost", serverPort);
+        request = new HttpRequest();
+        request.withMethod("POST").withPath("/notify");
+        mockServer.when(request).respond(response().withStatusCode(200));
+    }
+
+    @When("^The drone is near his delivery location$")
+    public void setRequest() {
+        requestBuilder = get("/order/notify/delivery/" + order.getId())
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8);
+    }
+
+    @Then("^The drone send a notification to Order service$")
+    public void sendRequest() throws Exception {
+        result = mockMvc.perform(requestBuilder).andReturn();
+    }
+
+    @And("^The client receives the notification that their delivery is close by$")
+    public void verifyMockServer() {
+        mockServer.verify(request, VerificationTimes.atLeast(1));
+    }
+
+
+    @Given("^Bad weather forecast$")
+    public void setMock() {
+        item = new Item("Persona 5");
+        itemRepo.save(item);
+        customer = new Customer("Roger", "Regor");
+        customerRepo.save(customer);
+        Coord coord = new Coord("0", "0");
+        coordRepo.save(coord);
+        order = new Order(coord, item, Status.PENDING, customer, "Bla bla bla");
+        orderRepo.save(order);
+
+        int serverPort = 20002;
+        System.setProperty("NOTIFY_HOST", "http://localhost:20002");
+        this.clientServer = startClientAndServer(serverPort);
+        mockServer = new MockServerClient("localhost", serverPort);
+        request = new HttpRequest();
+        request.withMethod("POST").withPath("/notify");
+        mockServer.when(request).respond(response().withStatusCode(200));
+    }
+
+    @When("^Drone is cancel by fleet manager$")
+    public void setCancelRequest() throws Exception {
+        requestBuilder = get("/order/notify/cancel/" + order.getId())
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8);
+        result = mockMvc.perform(requestBuilder).andReturn();
+    }
+
+    @Then("^A notification is send to client$")
+    public void verifyCancelNotification() {
+        mockServer.verify(request, VerificationTimes.atLeast(1));
     }
 
 }
