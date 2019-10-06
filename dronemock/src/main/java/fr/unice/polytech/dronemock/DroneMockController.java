@@ -2,6 +2,8 @@ package fr.unice.polytech.dronemock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +17,10 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "/commands", produces = "application/json")
 public class DroneMockController {
+
+    @Autowired
+    private Environment env;
+
 
     private static final Logger logger = LoggerFactory.getLogger(DroneMockController.class);
 
@@ -47,7 +53,7 @@ public class DroneMockController {
     public void sendToDroneService() {
         logger.info("Plop");
 
-        String droneServiceUrl = System.getProperty("DRONE_SERVICE");
+        String droneServiceUrl = env.getProperty("DRONE_SERVICE");
 
         StringBuilder stringBuilder = new StringBuilder("{");
         stringBuilder.append("\"droneId\":\"").append(droneId).append("\",");
@@ -56,6 +62,7 @@ public class DroneMockController {
         stringBuilder.append("\"longitude\":\"").append(lon).append("\"},");
         stringBuilder.append("\"altitude\":\"").append(alt).append("\",");
         stringBuilder.append("\"distanceToTarget\":\"").append(distanceToTarget).append("\"}}");
+
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.postForObject(droneServiceUrl + DRONE_PATH, stringBuilder.toString(), String.class);
 
