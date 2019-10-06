@@ -3,6 +3,7 @@ package fr.unice.polytech.codemara.drone;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.entities.Whereabouts;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ public class DroneControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Ignore
     @Test
     public void update_battery_status() throws Exception {
 
