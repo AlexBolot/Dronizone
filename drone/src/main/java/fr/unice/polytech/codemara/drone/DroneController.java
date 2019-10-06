@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
 import fr.unice.polytech.codemara.drone.entities.*;
+import fr.unice.polytech.codemara.drone.entities.DroneStatus;
 import fr.unice.polytech.codemara.drone.entities.command.CommandType;
 import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
 import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;

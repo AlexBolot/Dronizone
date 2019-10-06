@@ -1,19 +1,19 @@
 package fr.unice.polytech.codemara.drone.entities;
 
 import lombok.Data;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 
-import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static fr.unice.polytech.codemara.drone.entities.Drone.*;
-import static fr.unice.polytech.codemara.drone.entities.Drone.Status.ACTIVE;
+import static fr.unice.polytech.codemara.drone.entities.DroneStatus.ACTIVE;
 
 /**
  * Represent a drone Fleet
@@ -38,7 +38,7 @@ public class Fleet {
     }
 
     public void changeStatus(long droneID, String status) {
-        Status.find(status).ifPresent(droneStatus -> processForDrone(droneID, (drone -> drone.setStatus(droneStatus))));
+        DroneStatus.find(status).ifPresent(droneStatus -> processForDrone(droneID, (drone -> drone.setDroneStatus(droneStatus))));
     }
 
     public void updateData(long droneID, double batteryLevel, Whereabouts data) {
