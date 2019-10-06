@@ -2,17 +2,21 @@ package fr.unice.polytech.codemara.drone;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
 import fr.unice.polytech.codemara.drone.entities.Drone;
+import fr.unice.polytech.codemara.drone.entities.DroneStatus;
 import fr.unice.polytech.codemara.drone.entities.Fleet;
 import fr.unice.polytech.codemara.drone.entities.Whereabouts;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import fr.unice.polytech.codemara.drone.entities.command.CommandType;
+import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
+import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import static org.springframework.web.bind.annotation.RequestMethod.*;
@@ -22,12 +26,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
 public class DroneController {
 
     private static Fleet fleet = new Fleet();
+    final
+    private DroneCommander droneCommander;
+    private final DroneRepository droneRepository;
 
-    public DroneController() {
-        List<Drone> drones = new ArrayList<>();
-        for (int i = 0; i < 15; i++) drones.add(new Drone("aaa" + i, new Random().nextInt(100)));
-
-        fleet = new Fleet(drones);
+    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository) {
+        this.droneCommander = droneCommander;
+        this.droneRepository = droneRepository;
     }
 
     /**
@@ -50,8 +55,12 @@ public class DroneController {
      * @param droneID Identifier of the Drone to remove from the fleet
      */
     @RequestMapping(method = PUT, path = "/set_drone_aside/{droneID}/{status}")
-    public void changeDroneStatus(@PathVariable String droneID, @PathVariable String status) {
-        fleet.changeStatus(droneID, status);
+    public void changeDroneStatus(@PathVariable long droneID, @PathVariable String status) {
+        Optional<Drone> drone = droneRepository.findById(droneID);
+        drone.ifPresent(d -> {
+            d.setDroneStatus(DroneStatus.valueOf(status));
+            droneRepository.save(d);
+        } );
     }
 
     /**
@@ -84,7 +93,7 @@ public class DroneController {
     public void updateBatteryStatus(@RequestBody String json) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(json, ObjectNode.class);
 
-        String droneId = jsonNode.get("droneID").asText();
+        long droneId = jsonNode.get("droneID").asLong(0);
         double batteryLevel = jsonNode.get("battery_level").asDouble();
 
         String whereaboutsJson = jsonNode.get("whereabouts").toString();
@@ -95,5 +104,12 @@ public class DroneController {
 
         if (whereabouts.getDistanceToTarget() < 200)
             System.out.println("Alert we are close to delivery zone, send notification");
+    }
+
+    @PostMapping(path = "/fleet/command/callback")
+    public void callbackFleet()
+    {
+        DroneCommand callbackCommand = new DroneCommand(CommandType.CALLBACK);
+        droneCommander.broadcast(callbackCommand);
     }
 }
