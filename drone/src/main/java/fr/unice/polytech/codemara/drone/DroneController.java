@@ -3,21 +3,18 @@ package fr.unice.polytech.codemara.drone;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
-import fr.unice.polytech.codemara.drone.entities.Drone;
-import fr.unice.polytech.codemara.drone.entities.DroneStatus;
-import fr.unice.polytech.codemara.drone.entities.Fleet;
-import fr.unice.polytech.codemara.drone.entities.Whereabouts;
+import fr.unice.polytech.codemara.drone.entities.*;
 import fr.unice.polytech.codemara.drone.entities.command.CommandType;
+import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
 import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
+import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import sun.security.krb5.internal.ktab.KeyTab;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
@@ -29,10 +26,12 @@ public class DroneController {
     final
     private DroneCommander droneCommander;
     private final DroneRepository droneRepository;
+    private final DeliveryRepository deliveryRepository;
 
-    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository) {
+    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository) {
         this.droneCommander = droneCommander;
         this.droneRepository = droneRepository;
+        this.deliveryRepository = deliveryRepository;
     }
 
     /**
@@ -105,11 +104,24 @@ public class DroneController {
         if (whereabouts.getDistanceToTarget() < 200)
             System.out.println("Alert we are close to delivery zone, send notification");
     }
+    @PutMapping(path = "/request_delivery")
+    public void requireDelivery(@RequestBody Delivery delivery){
+        deliveryRepository.save(delivery);
+        Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
+        Drone drone = null;
+        if (drones.hasNext())
+            drone = drones.next();
+        DeliveryCommand deliveryCommand = new DeliveryCommand();
+        deliveryCommand.setDelivery(delivery);
+        deliveryCommand.setTarget(drone);
+        droneCommander.sendCommand(deliveryCommand);
+    }
 
     @PostMapping(path = "/fleet/command/callback")
     public void callbackFleet()
     {
         DroneCommand callbackCommand = new DroneCommand(CommandType.CALLBACK);
         droneCommander.broadcast(callbackCommand);
+
     }
 }

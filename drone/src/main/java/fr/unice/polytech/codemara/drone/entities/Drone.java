@@ -6,10 +6,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 
 @Data
 @Entity
@@ -22,6 +19,8 @@ public class Drone {
     private DroneStatus droneStatus;
     @ManyToOne
     private Whereabouts whereabouts;
+    @OneToOne
+    public Delivery currentDelivery;
 
     public Drone( double batteryLevel) {
         this.batteryLevel = batteryLevel;

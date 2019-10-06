@@ -14,8 +14,7 @@ public class Whereabouts {
     @Id
     @GeneratedValue
     private long id;
-    private double latitude;
-    private double longitude;
+    private Location location;
     private double altitude;
     private double distanceToTarget;
 }

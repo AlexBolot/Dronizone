@@ -30,8 +30,8 @@ public class DroneControllerTest {
         Whereabouts data = new Whereabouts();
         data.setAltitude(12);
         //data.setBatteryLevel(85);
-        data.setLatitude(12.1324);
-        data.setLongitude(4.3456);
+        data.getLocation().setLatitude(12.1324);
+        data.getLocation().setLongitude(4.3456);
         data.setDistanceToTarget(500);
 
         ObjectMapper mapper = new ObjectMapper();
