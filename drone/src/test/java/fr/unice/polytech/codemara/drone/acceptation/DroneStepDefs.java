@@ -15,7 +15,6 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.junit.After;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.verify.VerificationTimes;
@@ -28,11 +27,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import static fr.unice.polytech.codemara.drone.entities.DroneStatus.ACTIVE;
 import static fr.unice.polytech.codemara.drone.entities.DroneStatus.CALLED_HOME;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
@@ -71,6 +72,7 @@ public class DroneStepDefs extends SpringCucumberStepDef {
 
         droneRepository.saveAll(drones);
     }
+
     @And("a free drone")
     public void aFreeDrone() {
         Drone drone = new Drone(new Random().nextInt(100));
@@ -84,8 +86,11 @@ public class DroneStepDefs extends SpringCucumberStepDef {
     public void aMockedExternalDroneCommander() {
         int serverPort = 20000;
         System.setProperty("EXTERNAL_DRONE_HOST", "http://localhost:" + serverPort + "/");
-        this.clientServer = startClientAndServer(serverPort);
-        mockServer = new MockServerClient("localhost", serverPort);
+        if (this.clientServer==null) {
+            serverPort = 20000;
+            this.clientServer = startClientAndServer(serverPort);
+            mockServer = new MockServerClient("localhost", serverPort);
+        }
         mockServer
                 .when(
                         request()
@@ -96,7 +101,9 @@ public class DroneStepDefs extends SpringCucumberStepDef {
                         httpRequest -> {
                             try {
                                 JsonNode command = new ObjectMapper().readTree(httpRequest.getBodyAsString());
-                                mockMvc.perform(put("/drone/set_drone_aside/" + command.path("target").path("droneID") + "/" + CALLED_HOME)).andExpect(status().isOk());
+                                if (command.path("type").textValue().equals("CALLBACK")) {
+                                    mockMvc.perform(put("/drone/set_drone_aside/" + command.path("target").path("droneID") + "/" + CALLED_HOME)).andExpect(status().isOk());
+                                }
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -104,6 +111,24 @@ public class DroneStepDefs extends SpringCucumberStepDef {
                         }
                 );
     }
+
+    @And("A mocked Order Service")
+    public void aMockedOrderService() {
+        int serverPort = 20000;
+        System.setProperty("ORDER_SERVICE_HOST", "http://localhost:" + serverPort + "/");
+        if (this.clientServer==null) {
+            this.clientServer = startClientAndServer(serverPort);
+            mockServer = new MockServerClient("localhost", serverPort);
+        }
+        mockServer
+                .when(
+                        request()
+                                .withMethod("GET")
+                                .withPath("/order/notify/cancel/.*")
+                ).respond(response(""));
+                ;
+    }
+
 
     @When("Elena callbacks the drones")
     public void elenaCallbacksTheDrones() throws Exception {
@@ -117,12 +142,10 @@ public class DroneStepDefs extends SpringCucumberStepDef {
             ObjectMapper mapper = new ObjectMapper();
             drone.setDroneStatus(ACTIVE);
             String droneCallbackJson = mapper.writeValueAsString(new DroneCommand(CommandType.CALLBACK).copyWith(drone));
-
             this.mockServer.verify(
                     request()
                             .withPath("/commands")
-                            .withBody(droneCallbackJson),
-                    VerificationTimes.once()
+
             );
         }
 
@@ -134,14 +157,13 @@ public class DroneStepDefs extends SpringCucumberStepDef {
     }
 
 
-
     @When("Klaus requires a delivery")
     public void klausRequiresADelivery() throws Exception {
         Delivery test_delivery = new Delivery();
         test_delivery.setItemId(1);
         test_delivery.setOrderId(1);
-        test_delivery.setPickup_location(new Location(10,10));
-        test_delivery.setTarget_location(new Location(11,11));
+        test_delivery.setPickup_location(new Location(10, 10));
+        test_delivery.setTarget_location(new Location(11, 11));
         String test_delivery_json = new ObjectMapper().writeValueAsString(test_delivery);
         this.last_delivery = test_delivery;
         MockHttpServletRequestBuilder put = put("/drone/request_delivery");
@@ -152,7 +174,7 @@ public class DroneStepDefs extends SpringCucumberStepDef {
     @Then("A delivery command is sent to an available drone")
     public void aDeliveryCommandIsSentToAnAvailableDrone() throws JsonProcessingException {
         DeliveryCommand deliveryCommand = new DeliveryCommand();
-        deliveryCommand.setDelivery(deliveryRepository.findByOrderIdAndItemId(this.last_delivery.getOrderId(),this.last_delivery.getItemId()));
+        deliveryCommand.setDelivery(deliveryRepository.findByOrderIdAndItemId(this.last_delivery.getOrderId(), this.last_delivery.getItemId()));
         deliveryCommand.setTarget(this.free_drone);
         this.mockServer.verify(
                 request().withPath("/commands").withBody(new ObjectMapper().writeValueAsString(deliveryCommand))
@@ -161,31 +183,49 @@ public class DroneStepDefs extends SpringCucumberStepDef {
 
     @And("The sent delivery is registered")
     public void theSentDeliveryIsRegistered() {
-        assertNotNull(deliveryRepository.findByOrderIdAndItemId(this.last_delivery.getOrderId(),this.last_delivery.getItemId()));
+        assertNotNull(deliveryRepository.findByOrderIdAndItemId(this.last_delivery.getOrderId(), this.last_delivery.getItemId()));
     }
 
 
     @Then("A delivery canceled notification is sent to the order service")
     public void aDeliveryCanceledNotificationIsSentToTheOrderService() {
+
     }
 
     @And("deliveries in completion")
     public void deliveriesInCompletion() {
+        for (long i = 1; i < 16; i++) {
+            Optional<Drone> result = this.droneRepository.findById(i);
+            Drone drone = result.get();
+            Delivery delivery = new Delivery();
+            delivery.setTarget_location(new Location(10, 10));
+            delivery.setPickup_location(new Location(11, 11));
+            delivery.setItemId(i);
+            delivery.setOrderId(i);
+            deliveryRepository.save(delivery);
+            drone.currentDelivery = delivery;
+            droneRepository.save(drone);
+        }
 
     }
-
 
 
     @And("The mock server is teared down")
     public void theMockServerIsTearedDown() {
         System.out.println("teardown");
-        if (this.clientServer!=null){
+        if (this.clientServer != null) {
             this.clientServer.stop();
         }
+        this.mockServer= null;
     }
 
     @Given("An empty fleet")
     public void anEmptyFleet() {
         this.droneRepository.deleteAll(this.droneRepository.findAll());
+    }
+
+    @And("An empty DeliveryHistory")
+    public void anEmptyDeliveryHistory() {
+        this.deliveryRepository.deleteAll(this.deliveryRepository.findAll());
     }
 }

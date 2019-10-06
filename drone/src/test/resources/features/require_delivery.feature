@@ -2,6 +2,7 @@
 Feature: Requiring delivery
   Background:
     Given An empty fleet
+    And An empty DeliveryHistory
   Scenario: Klaus requires a delivery
     Given A Mocked External Drone Commander
     And a free drone

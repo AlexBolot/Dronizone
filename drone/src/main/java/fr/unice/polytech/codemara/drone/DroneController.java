@@ -7,6 +7,7 @@ import fr.unice.polytech.codemara.drone.entities.*;
 import fr.unice.polytech.codemara.drone.entities.command.CommandType;
 import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
 import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
+import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +28,13 @@ public class DroneController {
     private DroneCommander droneCommander;
     private final DroneRepository droneRepository;
     private final DeliveryRepository deliveryRepository;
+    private final OrderService orderService;
 
-    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository) {
+    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, OrderService orderService) {
         this.droneCommander = droneCommander;
         this.droneRepository = droneRepository;
         this.deliveryRepository = deliveryRepository;
+        this.orderService = orderService;
     }
 
     /**
@@ -97,9 +100,13 @@ public class DroneController {
 
         String whereaboutsJson = jsonNode.get("whereabouts").toString();
 
+        Whereabouts whereaboutsTest = new Whereabouts();
+        whereaboutsTest.setLocation(new Location(10,10));
+        whereaboutsTest.setAltitude(100);
+        whereaboutsTest.setDistanceToTarget(100);
+        System.out.println(new ObjectMapper().writeValueAsString(whereaboutsTest));
         Whereabouts whereabouts = new ObjectMapper().readValue(whereaboutsJson, Whereabouts.class);
 
-        fleet.updateData(droneId, batteryLevel, whereabouts);
 
         if (whereabouts.getDistanceToTarget() < 200)
             System.out.println("Alert we are close to delivery zone, send notification");
@@ -122,6 +129,8 @@ public class DroneController {
     {
         DroneCommand callbackCommand = new DroneCommand(CommandType.CALLBACK);
         droneCommander.broadcast(callbackCommand);
+        Iterable<Delivery> deliveries = deliveryRepository.findAll();
+        deliveries.forEach(orderService::cancel);
 
     }
 }

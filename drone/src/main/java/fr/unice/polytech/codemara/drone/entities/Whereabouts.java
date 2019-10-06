@@ -9,7 +9,6 @@ import javax.persistence.Id;
 
 @Entity
 @Data
-@NoArgsConstructor
 public class Whereabouts {
     @Id
     @GeneratedValue
@@ -17,5 +16,9 @@ public class Whereabouts {
     private Location location;
     private double altitude;
     private double distanceToTarget;
+
+    public Whereabouts() {
+        this.location = new Location();
+    }
 }
 
