@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.warehouse.entities.CustomerOrder;
 import fr.unice.polytech.codemara.warehouse.entities.repositories.OrderRepository;
 
+import gherkin.deps.com.google.gson.Gson;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -21,11 +22,12 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
@@ -92,7 +94,7 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
     @And("A mocked drone server")
     public void aMockedDroneServer() {
         int serverPort = 20000;
-        System.setProperty("DRONE_HOST","http://localhost:20000");
+        System.setProperty("DRONE_HOST", "http://localhost:20000");
         this.clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
 
@@ -105,14 +107,13 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
                 .respond(
                         response()
                                 .withStatusCode(200)
-                                .withBody("Pickup on it's way")
+                                .withBody("Pickup on its way")
                 );
         ;
     }
 
     @When("Klaus sets a query ready for delivery")
     public void klausSetsAQueryReadyForDelivery() throws Exception {
-
         this.last_query = mockMvc.perform(put("/warehouse/orders/1"));
     }
 
