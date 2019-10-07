@@ -1,5 +1,6 @@
 package fr.unice.polytech.dronemock;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,7 +41,7 @@ public class DroneMockController {
         lon = 10.;
         lat = 10.;
         alt = 12;
-        distanceToTarget = 190;
+        distanceToTarget = 100;
     }
 
     @PostMapping()
@@ -49,22 +51,22 @@ public class DroneMockController {
     }
 
     @Scheduled(fixedDelay = 500)
-    public void sendToDroneService() {
+    public void sendToDroneService() throws IOException {
         if (distanceToTarget > 1) distanceToTarget--;
 
         String droneServiceUrl = env.getProperty("DRONE_SERVICE");
 
         StringBuilder stringBuilder = new StringBuilder("{");
-        stringBuilder.append("\"droneId\":\"").append(droneId).append("\",");
+        stringBuilder.append("\"droneID\":\"").append(droneId).append("\",");
         stringBuilder.append("\"battery_level\":\"").append(batteryLevel).append("\",");
-        stringBuilder.append("\"whereabouts\":{\"location\":{\"latitude\":").append(lat).append("\"");
+        stringBuilder.append("\"whereabouts\":{\"location\":{\"latitude\":").append(lat).append(",");
         stringBuilder.append("\"longitude\":\"").append(lon).append("\"},");
         stringBuilder.append("\"altitude\":\"").append(alt).append("\",");
         stringBuilder.append("\"distanceToTarget\":\"").append(distanceToTarget).append("\"}}");
+        ObjectMapper mapper = new ObjectMapper();
 
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(droneServiceUrl + DRONE_PATH, stringBuilder.toString(), String.class);
-
+        restTemplate.postForObject(droneServiceUrl + DRONE_PATH, mapper.readTree(stringBuilder.toString()), String.class);
     }
 
 }

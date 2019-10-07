@@ -1,7 +1,10 @@
 package fr.unice.polytech.codemara.drone;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.unice.polytech.codemara.drone.entities.Delivery;
+import fr.unice.polytech.codemara.drone.entities.Location;
 import fr.unice.polytech.codemara.drone.entities.Whereabouts;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,5 +50,15 @@ public class DroneControllerTest {
                 .content(myjson);
 
         this.mockMvc.perform(req).andExpect(status().isOk());
+    }
+
+    @Test
+    public void delivery() throws JsonProcessingException {
+        Delivery delivery = new Delivery();
+        delivery.setOrderId(1);
+        delivery.setItemId(1);
+        delivery.setPickup_location(new Location(12,12));
+        delivery.setTarget_location(new Location(12,12));
+        System.out.println(new ObjectMapper().writeValueAsString(delivery));
     }
 }

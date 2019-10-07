@@ -113,7 +113,7 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
                 .when(
                         request()
                                 .withMethod("POST")
-                                .withPath("/")
+                                .withPath("/drone/request_delivery")
                 )
                 .respond(
                         response()
@@ -134,7 +134,7 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
         logger.info("######################## et le serveur de drone mocke recoit une requete post. ########################");
         this.mockServer.verify(
                 request()
-                        .withPath("/"),
+                        .withPath("/drone/request_delivery"),
                 VerificationTimes.once()
         );
     }

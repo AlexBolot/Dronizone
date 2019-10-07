@@ -1,5 +1,6 @@
 package fr.unice.polytech.codemara.drone;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
@@ -14,6 +15,7 @@ import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
 
@@ -46,7 +48,15 @@ public class DroneController {
      */
     @RequestMapping(method = GET, path = "/fleet_battery_status")
     public String fleetBatteryStatus() {
-        return fleet.batteryPrettyDump();
+        Iterable<Drone> drones = droneRepository.findAll();
+        HashMap<Long, Double> levels = new HashMap<>();
+        drones.forEach(d->levels.put(d.getDroneID(),d.getBatteryLevel()));
+        try {
+            return new ObjectMapper().writeValueAsString(levels);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     /**
@@ -103,12 +113,16 @@ public class DroneController {
 
         Whereabouts whereabouts = new ObjectMapper().readValue(whereaboutsJson, Whereabouts.class);
 
+        for (Drone drone :
+                droneRepository.findAll()) {
+            if (whereabouts.getDistanceToTarget() < 200 && drone.getCurrentDelivery()!=null)
+                orderService.notifyDelivery(drone.getCurrentDelivery());
+        }
 
-        if (whereabouts.getDistanceToTarget() < 200)
-            System.out.println("Alert we are close to delivery zone, send notification");
     }
-    @PutMapping(path = "/request_delivery")
-    public void requireDelivery(@RequestBody Delivery delivery){
+    @PostMapping(path = "/request_delivery")
+    public void requireDelivery(@RequestBody Delivery delivery) {
+
         deliveryRepository.save(delivery);
         Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
         Drone drone = null;
@@ -128,5 +142,9 @@ public class DroneController {
         Iterable<Delivery> deliveries = deliveryRepository.findAll();
         deliveries.forEach(orderService::cancel);
 
+    }
+    @GetMapping(path="/deliveries")
+    public Iterable<Delivery> deliveries(){
+        return deliveryRepository.findAll();
     }
 }

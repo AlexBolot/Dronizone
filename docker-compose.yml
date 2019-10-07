@@ -6,7 +6,7 @@ services:
       context: warehouse
       dockerfile: DOCKERFILE
       args:
-        JAR_FILE: target/wharehouse-0.0.1-SNAPSHOT.jar
+        JAR_FILE: target/warehouse-0.0.1-SNAPSHOT.jar
     image: dronazone-warehouse-server:latest
     expose:
       - 8081
@@ -17,21 +17,21 @@ services:
     logging:
       driver: json-file
     depends_on:
-      - postgres
+      - postgres-warehouse
     links:
-      - postgres
+      - postgres-warehouse
     environment:
-      DATASOURCE_HOST: postgres
+      DATASOURCE_HOST: postgres-warehouse
       NOTIFICATION_HOST: notification
-
-  drone-server:
-    container_name: dronazone-drone-server
+      DRONE_HOST: http://drone-server:8080
+  order-server:
+    container_name: dronazone-order-server
     build:
-      context: drone
-      dockerfile: DOCKERFILE
+      context: OrderService
+      dockerfile: Dockerfile
       args:
-        JAR_FILE: target/drone-0.0.1-SNAPSHOT.jar
-    image: dronazone-drone-server:latest
+        JAR_FILE: target/OrderService-1.0-SNAPSHOT.jar
+    image: dronazone-order-server:latest
     expose:
       - 8082
     ports:
@@ -40,20 +40,69 @@ services:
       - dronazone-network
     logging:
       driver: json-file
+    environment:
+      DATASOURCE_HOST: postgres-order
+      NOTIFY_HOST: http://notification:8080
+      DATASOURCE_USERNAME: dronazone
+      DATASOURCE_PWD: dronazone
+      WAREHOUSE_HOST: http://warehouse-server:8080
     depends_on:
-      - postgres
+      - postgres-order
     links:
-      - postgres
+      - postgres-order
 
-  postgres:
-    container_name: postgres-dronazone
+  drone-server:
+    container_name: dronazone-drone-server
+    build:
+      context: drone
+      dockerfile: DOCKERFILE
+      args:
+        JAR_FILE: target/drone-1.0-SNAPSHOT.jar
+    image: dronazone-drone-server:latest
+    expose:
+      - 8083
+    ports:
+      - 8083:8080
+    networks:
+      - dronazone-network
+    logging:
+      driver: json-file
+    environment:
+      DATASOURCE_HOST: postgres-order
+      NOTIFICATION_HOST: notification
+      ORDER_SERVICE_HOST: http://order-server
+    depends_on:
+      - postgres-order
+    links:
+      - postgres-order
+
+  postgres-order:
+    container_name: postgres-dronazone-order
     image: postgres
     environment:
       POSTGRES_PASSWORD: dronazone
       POSTGRES_USER: dronazone
       POSTGRES_DB: dronazone
-    ports:
-      - 5432:5432
+    networks:
+      - dronazone-network
+  postgres-warehouse:
+    container_name: postgres-dronazone-warehouse
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: dronazone
+      POSTGRES_USER: dronazone
+      POSTGRES_DB: dronazone
+
+    networks:
+      - dronazone-network
+  postgres-drone:
+    container_name: postgres-dronazone-drone
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: dronazone
+      POSTGRES_USER: dronazone
+      POSTGRES_DB: dronazone
+
     networks:
       - dronazone-network
   notification:
@@ -72,7 +121,24 @@ services:
       - dronazone-network
     logging:
       driver: json-file
-
+  drone-mock:
+    container_name: dronazone-drone-mock-server
+    build:
+      context: dronemock
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/dronemock-0.0.1-SNAPSHOT.jar
+    image: dronizone-mock-drone
+    expose:
+      - 8080
+    ports:
+      - 8084:8080
+    networks:
+      - dronazone-network
+    logging:
+      driver: json-file
+    environment:
+      DRONE_SERVICE: http://drone-server:8080/
 networks:
   dronazone-network:
     driver: bridge

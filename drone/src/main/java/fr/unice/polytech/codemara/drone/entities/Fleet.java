@@ -48,15 +48,7 @@ public class Fleet {
         });
     }
 
-    public String batteryPrettyDump() {
-        StringBuilder builder = new StringBuilder();
 
-        builder.append("{");
-        drones.forEach((id, drone) -> builder.append("\"").append(id).append("\": \"").append(drone.getBatteryLevel()).append("\","));
-
-        // Remove last unnecessary ","
-        return builder.toString().substring(0, builder.length() - 1) + "}";
-    }
 
     private void processForDrone(long droneID, Consumer<Drone> consumer) {
         Drone drone = drones.get(droneID);

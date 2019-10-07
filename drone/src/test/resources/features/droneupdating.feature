@@ -5,7 +5,6 @@ Feature: DroneUpdating
     And A mocked Order Service
 
   Scenario: A drone want to send it's whereabouts
-    Given An active Drone Fleet
     When Elena wants to know the battery levels of the fleet
     Then She receives the list of every drone and their battery level
     And The mock server is teared down
