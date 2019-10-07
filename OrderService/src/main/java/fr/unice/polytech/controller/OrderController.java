@@ -63,7 +63,7 @@ public class OrderController {
         if (notifyUrl == null) notifyUrl = NOTIFY_URL;
 
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + order.getId() + "/order", params, String.class);
+        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + order.getCustomer().getId() + "/order", params, String.class);
 
         return "OK";
     }
@@ -84,7 +84,7 @@ public class OrderController {
         if (notifyUrl == null) notifyUrl = NOTIFY_URL;
 
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + order.getId() + "/order", params, String.class);
+        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + order.getCustomer().getId() + "/order", params, String.class);
 
         return "OK";
     }

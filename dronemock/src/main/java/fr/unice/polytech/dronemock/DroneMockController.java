@@ -39,19 +39,18 @@ public class DroneMockController {
         lon = 10.;
         lat = 10.;
         alt = 12;
-        distanceToTarget = 250;
+        distanceToTarget = 190;
     }
 
     @PostMapping()
     public String received(@RequestBody String body) {
-        System.out.println(body);
         logger.info(body);
         return "OK";
     }
 
     @Scheduled(fixedDelay = 500)
     public void sendToDroneService() {
-        logger.info("Plop");
+        if (distanceToTarget > 1) distanceToTarget--;
 
         String droneServiceUrl = env.getProperty("DRONE_SERVICE");
 
