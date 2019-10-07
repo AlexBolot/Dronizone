@@ -172,7 +172,7 @@ public class OrderStepDefs extends SpringCucumberStepDef {
         this.clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
         request = new HttpRequest();
-        request.withMethod("POST").withPath("/notification/customer/" + order.getId() + "/order");
+        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
         mockServer.when(request).respond(response().withStatusCode(200));
     }
 
@@ -212,7 +212,7 @@ public class OrderStepDefs extends SpringCucumberStepDef {
         this.clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
         request = new HttpRequest();
-        request.withMethod("POST").withPath("/notification/customer/" + order.getId() + "/order");
+        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
         mockServer.when(request).respond(response().withStatusCode(200));
     }
 
