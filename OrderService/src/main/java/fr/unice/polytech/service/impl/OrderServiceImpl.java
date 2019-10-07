@@ -1,9 +1,10 @@
 package fr.unice.polytech.service.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceImpl;
-import fr.unice.polytech.entities.*;
+import fr.unice.polytech.entities.Customer;
+import fr.unice.polytech.entities.NotificationMedium;
+import fr.unice.polytech.entities.Order;
+import fr.unice.polytech.entities.Status;
 import fr.unice.polytech.repo.CoordRepo;
 import fr.unice.polytech.repo.CustomerRepo;
 import fr.unice.polytech.repo.ItemRepo;
@@ -11,18 +12,12 @@ import fr.unice.polytech.repo.OrderRepo;
 import fr.unice.polytech.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @AutoJsonRpcServiceImpl
@@ -94,5 +89,19 @@ public class OrderServiceImpl implements OrderService {
 //            e.printStackTrace();
 //        }
         return order;
+    }
+
+    @Override
+    public NotificationMedium setPersonalPreferences(int customerId, NotificationMedium medium) {
+        Optional<Customer> optCustomer = customerRepo.findById(customerId);
+
+        if (!optCustomer.isPresent())
+            throw new IllegalArgumentException("No Customer found with id " + customerId);
+
+        Customer customer = optCustomer.get();
+        customer.setMedium(medium);
+        customerRepo.save(customer);
+
+        return customer.getMedium();
     }
 }

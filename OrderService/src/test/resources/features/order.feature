@@ -4,3 +4,4 @@ Feature: OrderingItem
     When The client will order this Item
     Then The client will receive the order as confirmation
     And The Warehouse service will receive the order
+    And The mock server is teared down

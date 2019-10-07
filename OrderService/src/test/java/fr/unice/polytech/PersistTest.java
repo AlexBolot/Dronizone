@@ -35,7 +35,10 @@ public class PersistTest {
     public void customerTest() {
         Customer customer = new Customer("Doe", "John");
         customerRepo.save(customer);
-        assertEquals(customer, customerRepo.findCustomerById(customer.getId()));
+
+        Optional<Customer> optCustomer = customerRepo.findById(customer.getId());
+        assertTrue(optCustomer.isPresent());
+        assertEquals(customer, optCustomer.get());
     }
 
     @Test
