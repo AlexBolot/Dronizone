@@ -10,4 +10,6 @@ public interface OrderService {
     Order orderItem(@JsonRpcParam(value = "order") Order order);
 
     NotificationMedium setPersonalPreferences(@JsonRpcParam(value = "customerId") int customerId, @JsonRpcParam(value = "notificationPreference") NotificationMedium notificationMedium);
+
+    int registerCustomer(@JsonRpcParam(value = "name") String name, @JsonRpcParam(value = "firstName") String firstName);
 }

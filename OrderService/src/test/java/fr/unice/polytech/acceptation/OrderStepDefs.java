@@ -26,10 +26,10 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Optional;
 
 import static fr.unice.polytech.entities.NotificationMedium.valueOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpResponse.response;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -68,6 +68,8 @@ public class OrderStepDefs extends SpringCucumberStepDef {
     private int orderId;
     private int itemId;
     private int customerId;
+
+    private int customerCount;
 
     private HttpRequest request;
     private RequestBuilder requestBuilder;
@@ -245,6 +247,7 @@ public class OrderStepDefs extends SpringCucumberStepDef {
     @Given("^There are no customer$")
     public void thereAreNoCustomer() {
         customerRepo.deleteAll(customerRepo.findAll());
+        customerCount = (int) customerRepo.count();
     }
 
     @Given("^A customer$")
@@ -295,4 +298,48 @@ public class OrderStepDefs extends SpringCucumberStepDef {
         assertEquals(valueOf(mediumName), customer.getMedium());
     }
 
+    @When("Roger provides his identity")
+    public void rogerProvidesHisIdentity() throws Exception {
+        int serverPort = 20000;
+
+        clientServer = startClientAndServer(serverPort);
+        mockServer = new MockServerClient("localhost", serverPort);
+
+        request = new HttpRequest();
+        request.withMethod("POST").withPath("/warehouse/orders");
+        mockServer.when(request)
+                .respond(response().withStatusCode(200));
+
+        JsonParser parser = new JsonParser();
+        jsonElement = parser.parse("{\"id\": \"1\",\"jsonrpc\": \"2.0\",\"method\": \"registerCustomer\"}");
+
+        JsonObject param = new JsonObject();
+        param.addProperty("firstName", "Roger");
+        param.addProperty("name", "Regor");
+
+        jsonElement.getAsJsonObject().add("params", param);
+
+        this.last_query = mockMvc.perform(post("/order")
+                .content(jsonElement.toString())
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andReturn();
+
+        assertNotNull(last_query.getResponse().getContentAsString());
+    }
+
+    @Then("A customer is created")
+    public void aCustomerIsCreated() throws UnsupportedEncodingException {
+        JsonElement responseContent = new JsonParser().parse(last_query.getResponse().getContentAsString());
+        int customerId = responseContent.getAsJsonObject().get("result").getAsInt();
+
+        assertEquals(customerCount + 1, customerRepo.count());
+        Optional<Customer> optCustomer = customerRepo.findById(customerId);
+
+        assertTrue(optCustomer.isPresent());
+        Customer customer = optCustomer.get();
+
+        assertEquals("Roger", customer.getFirstName());
+        assertEquals("Regor", customer.getName());
+    }
 }

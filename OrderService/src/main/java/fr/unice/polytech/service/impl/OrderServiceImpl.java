@@ -104,4 +104,11 @@ public class OrderServiceImpl implements OrderService {
 
         return customer.getMedium();
     }
+
+    @Override
+    public int registerCustomer(String name, String firstName) {
+        Customer customer = new Customer(name, firstName);
+        customerRepo.save(customer);
+        return customer.getId();
+    }
 }
