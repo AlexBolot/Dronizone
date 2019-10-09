@@ -7,7 +7,7 @@ services:
     container_name: dronazone-warehouse-server
     build:
       context: warehouse
-      dockerfile: DOCKERFILE
+      dockerfile: Dockerfile
       args:
         JAR_FILE: target/warehouse-0.0.1-SNAPSHOT.jar
     image: dronazone-warehouse-server:latest
@@ -65,7 +65,7 @@ services:
     container_name: dronazone-drone-server
     build:
       context: drone
-      dockerfile: DOCKERFILE
+      dockerfile: Dockerfile
       args:
         JAR_FILE: target/drone-1.0-SNAPSHOT.jar
     image: dronazone-drone-server:latest
@@ -124,7 +124,7 @@ services:
     container_name: dronazone-notification-mock-server
     build:
       context: mock_notification_service
-      dockerfile: DOCKERFILE
+      dockerfile: Dockerfile
       args:
         JAR_FILE: target/mock_notification_service-0.0.1-SNAPSHOT.jar
     image: dronizone-mock-notification
