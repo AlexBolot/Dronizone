@@ -5,5 +5,5 @@ package fr.unice.polytech.codemera.mock_notification_service.notification;
  * If changed the readme.md should be edited as well
  */
 public class OrderNotification extends CustomerNotification{
-    public String orderName;
+    public String item_name;
 }

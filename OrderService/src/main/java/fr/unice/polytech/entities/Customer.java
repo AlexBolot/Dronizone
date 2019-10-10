@@ -10,6 +10,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import static fr.unice.polytech.entities.NotificationMedium.EMAIL;
+
 @Getter
 @Setter
 @ToString
@@ -22,7 +24,7 @@ public class Customer {
     private Integer id;
     private String name;
     private String firstName;
-    private NotificationMedium medium;
+    private NotificationMedium medium = EMAIL;
 
     public Customer() {
     }

@@ -1,5 +1,6 @@
 package fr.unice.polytech.controller;
 
+import fr.unice.polytech.entities.Customer;
 import fr.unice.polytech.entities.Order;
 import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
@@ -38,30 +39,49 @@ public class OrderController {
 
     @GetMapping("/delivery/{order_id}")
     public String notifyDelivery(@PathVariable("order_id") int orderId) {
-        return notifyStatusChanged(orderId, "Your delivery will arrive in 10 minutes");
-    }
-
-    @GetMapping("/cancel/{order_id}")
-    public String notifyCancel(@PathVariable("order_id") int orderId) {
-        return notifyStatusChanged(orderId, "Your delivery is cancel");
-    }
-
-    private String notifyStatusChanged(int orderId, String message) {
         Optional<Order> opt = orderRepo.findById(orderId);
 
         if (!opt.isPresent()) return "KO";
 
         Order order = opt.get();
+        Customer customer = order.getCustomer();
 
         Map<String, String> params = new HashMap<>();
-        params.put("customer_id", order.getCustomer().getId() + "");
+        params.put("customer_name", customer.getName() + " " + customer.getFirstName());
+        params.put("medium", customer.getMedium().name());
         params.put("item_name", order.getItem().getName());
-        params.put("payload", message);
+        params.put("payload", "Your delivery will arrived in 10 minutes");
 
         String notifyUrl = env.getProperty("NOTIFY_HOST");
         if (notifyUrl == null) notifyUrl = NOTIFY_URL;
 
-        new RestTemplate().postForObject(notifyUrl + NOTIFY_PATH + order.getCustomer().getId() + "/order", params, String.class);
+
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + customer.getId() + "/order", params, String.class);
+
+        return "OK";
+    }
+
+    @GetMapping("/cancel/{order_id}")
+    public String notifyCancel(@PathVariable("order_id") int orderId) {
+        Optional<Order> opt = orderRepo.findById(orderId);
+
+        if (!opt.isPresent()) return "KO";
+
+        Order order = opt.get();
+        Customer customer = order.getCustomer();
+
+        Map<String, String> params = new HashMap<>();
+        params.put("customer_name", customer.getName() + " " + customer.getFirstName());
+        params.put("medium", customer.getMedium().name());
+        params.put("item_name", order.getItem().getName());
+        params.put("payload", "Your delivery is cancel");
+
+        String notifyUrl = env.getProperty("NOTIFY_HOST");
+        if (notifyUrl == null) notifyUrl = NOTIFY_URL;
+
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + customer.getId() + "/order", params, String.class);
 
         return "OK";
     }
