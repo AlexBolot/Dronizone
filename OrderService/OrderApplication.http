@@ -36,3 +36,31 @@ GET http://localhost:8080/order/notify/ping/2/3
 Accept: application/json
 
 ###
+POST http://localhost:8082/order
+Content-Type: application/json
+
+{
+  "id": "1",
+  "jsonrpc": "2.0",
+  "method": "registerCustomer",
+  "params": {
+    "name": "Roger",
+    "firstName": "Regor"
+  }
+}
+
+###
+POST http://localhost:8082/order
+Content-Type: application/json
+
+{
+  "id": "1",
+  "jsonrpc": "2.0",
+  "method": "setPersonalPreferences",
+  "params": {
+    "customerId": 1,
+    "notificationPreference": "BITE"
+  }
+}
+
+###
