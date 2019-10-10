@@ -215,7 +215,13 @@ services:
     networks:
       - dronazone-network
       - monitoring
-
+    environment:
+      INFLUXDB_DB: dronazone
+      INFLUXDB_ADMIN_ENABLED: "true"
+      INFLUXDB_ADMIN_USER: dronadmin
+      INFLUXDB_ADMIN_PASSWORD: dronadmin
+      INFLUXDB_USER: dronazone
+      INFLUXDB_USER_PASSWORD: dronazone
 
 networks:
   dronazone-network:
