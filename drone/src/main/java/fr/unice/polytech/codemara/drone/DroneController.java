@@ -12,6 +12,9 @@ import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
 import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -31,6 +34,8 @@ public class DroneController {
     private final DroneRepository droneRepository;
     private final DeliveryRepository deliveryRepository;
     private final OrderService orderService;
+    private static final Logger logger = LoggerFactory.getLogger(DroneController.class);
+
 
     public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, OrderService orderService) {
         this.droneCommander = droneCommander;
@@ -146,5 +151,26 @@ public class DroneController {
     @GetMapping(path="/deliveries")
     public Iterable<Delivery> deliveries(){
         return deliveryRepository.findAll();
+    }
+
+    @KafkaListener(topics = "drones")
+    public void listen_to_drones(String message) throws IOException {
+            DroneState state = new ObjectMapper().readValue(message,DroneState.class);
+            Optional<Drone> result = droneRepository.findById(state.drone_id);;
+            if (state.whereabouts.getDistanceToTarget()<200 && result.isPresent()){
+                    Delivery delivery = result.get().getCurrentDelivery();
+                    orderService.notifyDelivery(delivery);
+
+            }
+
+            result.ifPresent(drone -> {
+                if (drone.getDroneStatus()!=state.getDroneStatus())
+                {
+                    drone.setDroneStatus(state.getDroneStatus());
+                    droneRepository.save(drone);
+                }
+            });
+
+
     }
 }

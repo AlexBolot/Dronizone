@@ -32,10 +32,12 @@ public class OrderService {
 
     public void notifyDelivery(Delivery delivery) {
         try {
+
             URL url = UriComponentsBuilder.fromUriString(env.getProperty("ORDER_SERVICE_HOST")+"/order/notify/delivery/"+delivery.getOrderId())
                     .build().toUri().toURL();
             RestTemplate restTemplate = new RestTemplate();
-            restTemplate.getForEntity(url.toString(), String.class);
+            ResponseEntity<String> response = restTemplate.getForEntity(url.toString(), String.class);
+            response.getStatusCode();
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
