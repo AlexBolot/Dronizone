@@ -1,4 +1,5 @@
 Feature: DroneUpdating
+
   Background:
     Given A Mocked External Drone Commander
 
@@ -27,3 +28,12 @@ Feature: DroneUpdating
     And The drone has distance to target of 100m
     Then The OrderService receives 1 delivery notification
     And The mock server is teared down
+
+  Scenario: A new drone is automaticaly registered
+    Given An empty fleet
+    And mocked drone publishers
+    When A new drone sends a state update
+    And A pause of 1 seconds
+    Then The drone is added in the database
+    And The drone is assigned a new id
+    And A Drone initialization command is sent to the drone

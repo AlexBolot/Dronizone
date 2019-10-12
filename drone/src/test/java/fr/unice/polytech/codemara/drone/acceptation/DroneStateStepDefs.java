@@ -2,10 +2,7 @@ package fr.unice.polytech.codemara.drone.acceptation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.unice.polytech.codemara.drone.entities.DroneState;
-import fr.unice.polytech.codemara.drone.entities.DroneStatus;
-import fr.unice.polytech.codemara.drone.entities.Location;
-import fr.unice.polytech.codemara.drone.entities.Whereabouts;
+import fr.unice.polytech.codemara.drone.entities.*;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.When;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -31,7 +28,7 @@ public class DroneStateStepDefs {
 
     @When("^The distance goes under (\\d+)m$")
     public void theDistanceGoesUnderM(int distance) throws JsonProcessingException {
-        DroneState data = new DroneState(90, new Whereabouts(10, new Location(45, 7), 100, distance - 1), this.context.currentDrone.getDroneID(),DroneStatus.ACTIVE);
+        DroneState data = new DroneState(90, new Whereabouts(10, new Location(45, 7), 100, distance - 1), this.context.currentDrone.getDroneID(), DroneStatus.ACTIVE);
         context.kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(data));
 
     }
@@ -51,5 +48,20 @@ public class DroneStateStepDefs {
         // create a Kafka template
         context.kafkaTemplate = new KafkaTemplate<>(producerFactory);
 
+    }
+
+    @When("A new drone sends a state update")
+    public void aNewDroneSendsAStateUpdate() throws JsonProcessingException {
+        Whereabouts whereabouts = new Whereabouts();
+        whereabouts.setDistanceToTarget(300);
+        whereabouts.setLocation(new Location(45,7));
+        whereabouts.setAltitude(100);
+        DroneState data = new DroneState(90,
+                whereabouts,
+                -10
+                , DroneStatus.ACTIVE);
+        context.kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(data));
+        this.context.currentDrone = new Drone();
+        this.context.currentDrone.setDroneID(-10);
     }
 }

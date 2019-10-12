@@ -7,12 +7,12 @@ import fr.unice.polytech.codemara.drone.entities.*;
 import fr.unice.polytech.codemara.drone.entities.command.CommandType;
 import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
 import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
+import fr.unice.polytech.codemara.drone.entities.command.InitCommand;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import org.mockserver.client.MockServerClient;
-import org.mockserver.integration.ClientAndServer;
 import org.mockserver.verify.VerificationTimes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
@@ -65,7 +65,7 @@ public class ServiceMockStepDefs {
     public void theOrderServiceReceivesANotification(int notificationCount) throws InterruptedException {
         Thread.sleep(1000);
         this.context.mockServer.verify(
-                request().withPath("/order/notify/delivery/"+this.context.currentDrone.getCurrentDelivery().getOrderId()).withMethod("GET"),
+                request().withPath("/order/notify/delivery/" + this.context.currentDrone.getCurrentDelivery().getOrderId()).withMethod("GET"),
                 VerificationTimes.exactly(notificationCount)
         );
     }
@@ -144,11 +144,28 @@ public class ServiceMockStepDefs {
     @Then("A delivery command is sent to an available drone")
     public void aDeliveryCommandIsSentToAnAvailableDrone() throws JsonProcessingException {
         DeliveryCommand deliveryCommand = new DeliveryCommand();
-        deliveryCommand.setDelivery(deliveryRepository.findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
+        deliveryCommand.setDelivery(deliveryRepository
+                .findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
         deliveryCommand.setTarget(this.context.currentDrone);
+
         this.context.mockServer.verify(
                 request().withPath("/commands").withBody(new ObjectMapper().writeValueAsString(deliveryCommand))
         );
     }
 
+    @And("A Drone initialization command is sent to the drone")
+    public void aDroneInitializationCommandIsSentToTheDrone() throws JsonProcessingException {
+        Drone drone = droneRepository.findAll().iterator().next();
+        long newId = drone.getDroneID();
+        drone.setDroneID(this.context.currentDrone.getDroneID());
+        InitCommand initializationCommand = new InitCommand(drone,newId);
+        this.context.mockServer.verify(
+                request().withPath("/commands").withBody(new ObjectMapper().writeValueAsString(initializationCommand))
+        );
+    }
+
+    @And("A pause of {int} seconds")
+    public void aPauseOfSeconds(int arg0) throws InterruptedException {
+        Thread.sleep(arg0*1000);
+    }
 }

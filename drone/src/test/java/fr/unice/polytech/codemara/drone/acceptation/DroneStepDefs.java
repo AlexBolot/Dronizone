@@ -22,8 +22,7 @@ import java.util.Random;
 
 import static fr.unice.polytech.codemara.drone.entities.DroneStatus.*;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +41,6 @@ public class DroneStepDefs {
     @Autowired
     private MockMvc mockMvc;
 
-    private Drone free_drone;
     @Autowired
     private DeliveryRepository deliveryRepository;
 
@@ -75,7 +73,7 @@ public class DroneStepDefs {
         drone.setDroneStatus(DroneStatus.ACTIVE);
         drone.currentDelivery = null;
         drone = droneRepository.save(drone);
-        this.free_drone = drone;
+        this.context.currentDrone = drone;
     }
 
     @And("A sidelined drone")
@@ -84,7 +82,7 @@ public class DroneStepDefs {
         drone.setDroneStatus(ASIDE);
         drone.currentDelivery = null;
         drone = droneRepository.save(drone);
-        this.free_drone = drone;
+        this.context.currentDrone = drone;
     }
 
     @When("Elena callbacks the drones")
@@ -179,21 +177,21 @@ public class DroneStepDefs {
 
     @When("^Elena asks to set the drone aside$")
     public void elenaAsksToSetAside() throws Exception {
-        MockHttpServletRequestBuilder req = put("/drone/set_drone_aside/" + free_drone.getDroneID() + "/" + ASIDE + "");
+        MockHttpServletRequestBuilder req = put("/drone/set_drone_aside/" + this.context.currentDrone.getDroneID() + "/" + ASIDE + "");
         mockMvc.perform(req)
                 .andExpect(status().isOk());
     }
 
     @Then("The drone's status is {string}")
     public void theDroneSStatusIs(String statusName) {
-        free_drone = droneRepository.findById(free_drone.getDroneID()).get();
+        this.context.currentDrone = droneRepository.findById(this.context.currentDrone.getDroneID()).get();
         DroneStatus status = DroneStatus.find(statusName).get();
-        Assert.assertTrue(free_drone.is(status));
+        Assert.assertTrue(this.context.currentDrone.is(status));
     }
 
     @When("^Elena asks to set the drone ready for service$")
     public void elenaAsksToSetReadyForService() throws Exception {
-        MockHttpServletRequestBuilder req = put("/drone/set_drone_aside/" + free_drone.getDroneID() + "/" + ACTIVE + "");
+        MockHttpServletRequestBuilder req = put("/drone/set_drone_aside/" + this.context.currentDrone.getDroneID() + "/" + ACTIVE + "");
         mockMvc.perform(req)
                 .andExpect(status().isOk());
     }
@@ -214,5 +212,22 @@ public class DroneStepDefs {
         this.context.currentDrone.setDroneStatus(ACTIVE);
         droneRepository.save(context.currentDrone);
 
+    }
+
+    @Then("The drone is added in the database")
+    public void theDroneIsAddedInTheDatabase() {
+        Iterable<Drone> all = droneRepository.findAll();
+        int count = 0;
+        for (Drone drone :
+                all) {
+            count += 1;
+        }
+        assertEquals(1, count);
+    }
+
+    @And("The drone is assigned a new id")
+    public void theDroneIsAssignedANewId() {
+        Drone drone  = droneRepository.findAll().iterator().next();
+        assertNotEquals(this.context.currentDrone.getDroneID(),drone.getDroneID());
     }
 }

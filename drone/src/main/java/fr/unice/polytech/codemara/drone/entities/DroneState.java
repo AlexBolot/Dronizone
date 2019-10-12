@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DroneState {
-    public int battery;
-    public Whereabouts whereabouts;
-    public long drone_id;
-    public DroneStatus droneStatus;
+    private int battery;
+    private Whereabouts whereabouts;
+    private long drone_id;
+    private DroneStatus droneStatus;
 }
 

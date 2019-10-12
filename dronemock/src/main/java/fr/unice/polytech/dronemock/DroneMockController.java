@@ -1,21 +1,15 @@
 package fr.unice.polytech.dronemock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.unice.polytech.dronemock.models.DroneState;
-import fr.unice.polytech.dronemock.models.Location;
-import fr.unice.polytech.dronemock.models.Whereabouts;
+import fr.unice.polytech.dronemock.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path = "/commands", produces = "application/json")
@@ -26,6 +20,7 @@ public class DroneMockController {
 
 
     private static final Logger logger = LoggerFactory.getLogger(DroneMockController.class);
+    private final Drone currentDrone;
 
     private int batteryLevel;
     private int droneId;
@@ -45,6 +40,11 @@ public class DroneMockController {
         distanceToTarget = 100;
         this.env = env;
         this.kafkaTemplate = kafkaTemplate;
+        this.currentDrone = new Drone();
+        currentDrone.setBatteryLevel(100);
+        currentDrone.setDroneID(-10);
+        currentDrone.setWhereabouts(new Whereabouts(new Location(45,7),100,300));
+        currentDrone.setDroneStatus(DroneStatus.ACTIVE);
     }
 
     @PostMapping()
@@ -54,7 +54,9 @@ public class DroneMockController {
 
     @Scheduled(fixedDelay = 500)
     public void sendToDroneService() throws IOException {
-        DroneState droneState = new DroneState(100,new Whereabouts(new Location(43.6, 7.1),100,100),1);
+        DroneState droneState = new DroneState(this.currentDrone.getBatteryLevel(),
+                this.currentDrone.getWhereabouts(),
+                this.currentDrone.getDroneID(), this.currentDrone.getDroneStatus());
         kafkaTemplate.send("drones",new ObjectMapper().writeValueAsString(droneState));
     }
 
