@@ -5,7 +5,6 @@ import fr.unice.polytech.codemara.drone.entities.Drone;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.kafka.core.KafkaTemplate;
-import sun.security.ssl.krb5.KerberosClientKeyExchangeImpl;
 
 import java.util.List;
 
