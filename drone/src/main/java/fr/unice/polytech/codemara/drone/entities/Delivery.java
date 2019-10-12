@@ -22,5 +22,7 @@ public class Delivery {
     private Location pickup_location;
     @Embedded
     private Location target_location;
-    
+    private boolean notified = false;
+
+
 }

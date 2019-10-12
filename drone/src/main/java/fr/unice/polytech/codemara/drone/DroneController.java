@@ -28,7 +28,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
 @RequestMapping(path = "/drone", produces = "application/json")
 public class DroneController {
 
-    private static Fleet fleet = new Fleet();
     final
     private DroneCommander droneCommander;
     private final DroneRepository droneRepository;
@@ -157,10 +156,11 @@ public class DroneController {
     public void listen_to_drones(String message) throws IOException {
             DroneState state = new ObjectMapper().readValue(message,DroneState.class);
             Optional<Drone> result = droneRepository.findById(state.drone_id);;
-            if (state.whereabouts.getDistanceToTarget()<200 && result.isPresent()){
+            if (state.whereabouts.getDistanceToTarget()<200 && result.isPresent() && !result.get().getCurrentDelivery().isNotified()){
                     Delivery delivery = result.get().getCurrentDelivery();
                     orderService.notifyDelivery(delivery);
-
+                    delivery.setNotified(true);
+                    deliveryRepository.save(delivery);
             }
 
             result.ifPresent(drone -> {
