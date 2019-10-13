@@ -189,8 +189,10 @@ services:
     image: telegraf:latest
     network_mode: "host"
     volumes:
-      - /c/Users/ThePrecisionBro/IdeaProjects/dronizone-1920-soa-team-codemara/dockers/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
-
+      - ./dockers/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - kafka
+      - influxdb
 
 
   ############  GRAFANA  #################
