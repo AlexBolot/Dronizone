@@ -1,25 +1,20 @@
 package fr.unice.polytech.controller;
 
-import fr.unice.polytech.entities.Customer;
-import fr.unice.polytech.entities.Item;
 import fr.unice.polytech.entities.Order;
-import fr.unice.polytech.repo.CustomerRepo;
+import fr.unice.polytech.entities.OrderStatusMessage;
 import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
+import gherkin.deps.com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
 @RequestMapping(path = "/order/notify", produces = "application/json")
@@ -27,6 +22,8 @@ public class OrderController {
 
     private static final String NOTIFY_URL = "http://localhost:8080";
     private static final String NOTIFY_PATH = "/notification/customer/";
+
+    private final KafkaTemplate kafkaTemplate;
 
     @Autowired
     private ItemRepo itemRepo;
@@ -37,9 +34,13 @@ public class OrderController {
     @Autowired
     private Environment env;
 
+    public OrderController(KafkaTemplate kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
     @GetMapping("/{hello}")
-    public String order_ping(@PathVariable("hello") String hello){
-        if (hello.equals("hello")){
+    public String order_ping(@PathVariable("hello") String hello) {
+        if (hello.equals("hello")) {
             return "World";
 
         }
@@ -57,7 +58,7 @@ public class OrderController {
         Map<String, String> params = new HashMap<>();
         params.put("customer_id", order.getCustomer().getId() + "");
         params.put("item_name", order.getItem().getName());
-        params.put("payload", "Your delivery will arrived in 10 minutes");
+        params.put("payload", "Your delivery will arrive in 10 minutes");
 
         String notifyUrl = env.getProperty("NOTIFY_HOST");
         if (notifyUrl == null) notifyUrl = NOTIFY_URL;
@@ -67,6 +68,7 @@ public class OrderController {
 
         return "OK";
     }
+
     @GetMapping("/cancel/{order_id}")
     public String notifyCancel(@PathVariable("order_id") int orderId) {
         Optional<Order> opt = orderRepo.findById(orderId);
@@ -89,9 +91,26 @@ public class OrderController {
         return "OK";
     }
 
-//    @RequestMapping(method = POST, path = "/newOrder")
-//    public Order greeting(@RequestBody String address,
-//                          @RequestBody String item) {
-//        return new Order(address, item);
-//    }
+    @GetMapping("/kafka")
+    public void kafkaTest() {
+        kafkaTemplate.send("delivery", "{\"orderId\":2; \"status\":\"soon\"}");
+    }
+
+    /**
+     * This struct will maybe change if the data sent here get more complex
+     * {"orderId":x; "status":"soon"}
+     *
+     * @param content
+     */
+
+    @KafkaListener(topics = "delivery")
+    public void checkIfClose(String content) {
+        Gson gson = new Gson();
+        OrderStatusMessage osm = gson.fromJson(content, OrderStatusMessage.class);
+        int orderId = osm.getOrder_id();
+        String status = osm.getStatus();
+        if (status.equals("soon")) {
+            notifyDelivery(orderId);
+        }
+    }
 }

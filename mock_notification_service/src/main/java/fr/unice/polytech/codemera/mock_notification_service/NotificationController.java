@@ -17,7 +17,6 @@ public class NotificationController {
     }
 
     @PostMapping("/customer/{target_id}/order")
-
     public OrderNotification notify_customer_order(@PathVariable("target_id") long target_id, @RequestBody OrderNotification notification){
         System.out.println("customer_name = " + notification.customer_name);
         System.out.println("payload = " + notification.payload);
