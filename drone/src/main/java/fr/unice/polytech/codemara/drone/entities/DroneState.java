@@ -12,5 +12,6 @@ public class DroneState {
     private Whereabouts whereabouts;
     private long drone_id;
     private DroneStatus droneStatus;
+    private long timestamp;
 }
 

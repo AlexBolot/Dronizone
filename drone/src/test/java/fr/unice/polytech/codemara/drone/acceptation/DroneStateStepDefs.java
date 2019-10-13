@@ -22,13 +22,13 @@ public class DroneStateStepDefs {
 
     @And("^The drone has distance to target of (\\d+)m$")
     public void theDroneHasDistanceToTargetOfM(int distance) throws JsonProcessingException {
-        DroneState state = new DroneState(100, new Whereabouts(10, new Location(45, 7), 100, distance), this.context.currentDrone.getDroneID(), DroneStatus.ACTIVE);
+        DroneState state = new DroneState(100, new Whereabouts(10, new Location(45, 7), 100, distance), this.context.currentDrone.getDroneID(), DroneStatus.ACTIVE, System.currentTimeMillis());
         context.kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(state));
     }
 
     @When("^The distance goes under (\\d+)m$")
     public void theDistanceGoesUnderM(int distance) throws JsonProcessingException {
-        DroneState data = new DroneState(90, new Whereabouts(10, new Location(45, 7), 100, distance - 1), this.context.currentDrone.getDroneID(), DroneStatus.ACTIVE);
+        DroneState data = new DroneState(90, new Whereabouts(10, new Location(45, 7), 100, distance - 1), this.context.currentDrone.getDroneID(), DroneStatus.ACTIVE, System.currentTimeMillis());
         context.kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(data));
 
     }
@@ -59,7 +59,7 @@ public class DroneStateStepDefs {
         DroneState data = new DroneState(90,
                 whereabouts,
                 -10
-                , DroneStatus.ACTIVE);
+                , DroneStatus.ACTIVE, System.currentTimeMillis());
         context.kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(data));
         this.context.currentDrone = new Drone();
         this.context.currentDrone.setDroneID(-10);
