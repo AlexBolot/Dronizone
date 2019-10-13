@@ -1,10 +1,13 @@
 version: '3'
 services:
+
+############  WAREHOUSE  #################
+
   warehouse-server:
     container_name: dronazone-warehouse-server
     build:
       context: warehouse
-      dockerfile: DOCKERFILE
+      dockerfile: Dockerfile
       args:
         JAR_FILE: target/warehouse-0.0.1-SNAPSHOT.jar
     image: dronazone-warehouse-server:latest
@@ -18,12 +21,16 @@ services:
       driver: json-file
     depends_on:
       - postgres-warehouse
+      - kafka
     links:
       - postgres-warehouse
     environment:
       DATASOURCE_HOST: postgres-warehouse
       NOTIFICATION_HOST: notification
       DRONE_HOST: http://drone-server:8080
+
+############  ORDER  #################
+
   order-server:
     container_name: dronazone-order-server
     build:
@@ -48,14 +55,17 @@ services:
       WAREHOUSE_HOST: http://warehouse-server:8080
     depends_on:
       - postgres-order
+      - kafka
     links:
       - postgres-order
+
+############  DRONE  #################
 
   drone-server:
     container_name: dronazone-drone-server
     build:
       context: drone
-      dockerfile: DOCKERFILE
+      dockerfile: Dockerfile
       args:
         JAR_FILE: target/drone-1.0-SNAPSHOT.jar
     image: dronazone-drone-server:latest
@@ -72,9 +82,12 @@ services:
       NOTIFICATION_HOST: notification
       ORDER_SERVICE_HOST: http://order-server
     depends_on:
-      - postgres-order
+      - postgres-drone
+      - kafka
     links:
-      - postgres-order
+      - postgres-drone
+
+############  POSTGRES  #################
 
   postgres-order:
     container_name: postgres-dronazone-order
@@ -102,14 +115,16 @@ services:
       POSTGRES_PASSWORD: dronazone
       POSTGRES_USER: dronazone
       POSTGRES_DB: dronazone
-
     networks:
       - dronazone-network
+
+############  NOTIFICATION  #################
+
   notification:
     container_name: dronazone-notification-mock-server
     build:
       context: mock_notification_service
-      dockerfile: DOCKERFILE
+      dockerfile: Dockerfile
       args:
         JAR_FILE: target/mock_notification_service-0.0.1-SNAPSHOT.jar
     image: dronizone-mock-notification
@@ -117,10 +132,15 @@ services:
       - 8080
     ports:
       - 44444:8080
+    depends_on:
+      - kafka
     networks:
       - dronazone-network
     logging:
       driver: json-file
+
+############  DRONE MOCK  #################
+
   drone-mock:
     container_name: dronazone-drone-mock-server
     build:
@@ -133,12 +153,79 @@ services:
       - 8080
     ports:
       - 8084:8080
+    depends_on:
+      - kafka
+      - drone-server
     networks:
       - dronazone-network
     logging:
       driver: json-file
     environment:
       DRONE_SERVICE: http://drone-server:8080/
+
+############  KAFKA  #################
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    expose:
+      - 9092
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+#      KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "drones:1:1"
+
+
+  ############  GRAFANA  #################
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    expose:
+      - 3000
+    ports:
+      - 3000:3000
+    depends_on:
+      - kafka
+    networks:
+      - dronazone-network
+      - monitoring
+
+############  INFLUX  #################
+
+  influxdb:
+    image: influxdb
+    container_name: influxdb
+    restart: always
+    expose:
+      - 8086
+    ports:
+      - 8086:8086
+    depends_on:
+      - kafka
+    networks:
+      - dronazone-network
+      - monitoring
+    environment:
+      INFLUXDB_DB: dronazone
+      INFLUXDB_ADMIN_ENABLED: "true"
+      INFLUXDB_ADMIN_USER: dronadmin
+      INFLUXDB_ADMIN_PASSWORD: dronadmin
+      INFLUXDB_USER: dronazone
+      INFLUXDB_USER_PASSWORD: dronazone
+
 networks:
   dronazone-network:
     driver: bridge
+  monitoring:

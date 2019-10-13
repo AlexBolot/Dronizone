@@ -8,3 +8,6 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     generate-ddl: true
+  kafka:
+    consumer:
+      group-id: drone-service

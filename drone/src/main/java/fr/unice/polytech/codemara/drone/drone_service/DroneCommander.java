@@ -5,6 +5,8 @@ import fr.unice.polytech.codemara.drone.entities.Drone;
 import fr.unice.polytech.codemara.drone.entities.DroneStatus;
 import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ public class DroneCommander {
     private String externalDroneUrl;
     @Autowired
     DroneRepository droneRepository;
+    private static final Logger logger = LoggerFactory.getLogger(DroneCommand.class);
 
     public DroneCommander(Environment env) {
         this.env= env;
@@ -50,7 +53,7 @@ public class DroneCommander {
             ObjectMapper mapper = new ObjectMapper();
             String body = response.getBody();
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            logger.error(e.toString());
         }
 
 
