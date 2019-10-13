@@ -17,6 +17,5 @@ public class DroneServiceControllerCucumberTest {
         System.out.println("broker in the cucumber runner "+ rule.getEmbeddedKafka().getBrokersAsString());
         System.setProperty("spring.kafka.bootstrap-servers",
                 rule.getEmbeddedKafka().getBrokersAsString());
-
     }
 }

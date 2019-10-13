@@ -59,7 +59,7 @@ Content-Type: application/json
   "method": "setPersonalPreferences",
   "params": {
     "customerId": 1,
-    "notificationPreference": "BITE"
+    "notificationPreference": "SMS"
   }
 }
 

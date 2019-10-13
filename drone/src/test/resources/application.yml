@@ -1,8 +1,8 @@
 spring:
-#  datasource:
-#    url: jdbc:postgresql://localhost:5432/dronazone
-#    username: dronazone
-#    password: dronazone
+  #  datasource:
+  #    url: jdbc:postgresql://localhost:5432/dronazone
+  #    username: dronazone
+  #    password: dronazone
   datasource:
     url: jdbc:h2:mem:testdb
     username: dronazone
@@ -11,5 +11,6 @@ spring:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     topic:
       drones: drones
+      deliveryPostponed: deliveryPostponed
     consumer:
       group-id: test

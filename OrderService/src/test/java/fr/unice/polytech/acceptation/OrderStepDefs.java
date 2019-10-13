@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @AutoConfigureMockMvc
-public class OrderStepDefs extends SpringCucumberStepDef {
+public class OrderStepDefs {
 
     @Autowired
     private Environment environment;

@@ -23,6 +23,4 @@ public class Delivery {
     @Embedded
     private Location target_location;
     private boolean notified = false;
-
-
 }

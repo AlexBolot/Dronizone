@@ -13,6 +13,6 @@ script:
   - cd mock_notification_service
   - mvn clean install
   - cd ../
-  - docker-compose up -d
+  - docker-compose up -d --build
   - docker-compose down
   - mvn clean verify sonar:sonar -Pcoverage -Dsonar.host.url=http://sonar.galles.io

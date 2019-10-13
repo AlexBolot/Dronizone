@@ -19,34 +19,32 @@ import fr.unice.polytech.codemara.drone.repositories.WhereaboutsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
 
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
-
 @RestController
 @RequestMapping(path = "/drone", produces = "application/json")
 public class DroneController {
-
 
     private static final Logger logger = LoggerFactory.getLogger(DroneController.class);
     private final DroneCommander droneCommander;
     private final DroneRepository droneRepository;
     private final DeliveryRepository deliveryRepository;
     private final OrderService orderService;
+    private final KafkaTemplate kafkaTemplate;
     private final WhereaboutsRepository whereaboutsRepository;
 
-
-    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, OrderService orderService, WhereaboutsRepository whereaboutsRepository) {
+    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, WhereaboutsRepository whereaboutsRepository, OrderService orderService, KafkaTemplate kafkaTemplate) {
         this.droneCommander = droneCommander;
         this.droneRepository = droneRepository;
         this.deliveryRepository = deliveryRepository;
         this.orderService = orderService;
         this.whereaboutsRepository = whereaboutsRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     /**
@@ -110,7 +108,7 @@ public class DroneController {
         droneCommander.broadcast(callbackCommand);
         Iterable<Delivery> deliveries = deliveryRepository.findAll();
         deliveries.forEach(orderService::cancel);
-
+        deliveries.forEach(delivery -> kafkaTemplate.send("deliveryPostponed", String.valueOf(delivery.getOrderId())));
     }
 
     @GetMapping(path = "/deliveries")

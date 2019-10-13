@@ -3,11 +3,7 @@ package fr.unice.polytech.codemara.drone.entities.command;
 import fr.unice.polytech.codemara.drone.entities.Drone;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
 
 /**
  * Represent an order to be sent to a drone
@@ -28,7 +24,7 @@ public class DroneCommand {
         type = null;
     }
 
-    public DroneCommand copyWith(Drone target){
+    public DroneCommand copyWith(Drone target) {
         DroneCommand copy = new DroneCommand(this.type);
         copy.target = target;
         return copy;

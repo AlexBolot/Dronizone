@@ -29,7 +29,7 @@ Feature: DroneUpdating
     Then The OrderService receives 1 delivery notification
     And The mock server is teared down
 
-  Scenario: A new drone is automaticaly registered
+  Scenario: A new drone is automatically registered
     Given An empty fleet
     And mocked drone publishers
     When A new drone sends a state update
