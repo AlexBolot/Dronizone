@@ -8,6 +8,8 @@ matrix:
       before_install:
         - rm "${JAVA_HOME}/lib/security/cacerts"
         - ln -s /etc/ssl/certs/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
+notifications:
+  slack: informatiquep-kyw7477:lC8s8YdlUaOFLThMaw7UGben
 script:
   - mvn install
   - cd mock_notification_service
