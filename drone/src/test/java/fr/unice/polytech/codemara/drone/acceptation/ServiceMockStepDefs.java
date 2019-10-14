@@ -102,7 +102,7 @@ public class ServiceMockStepDefs {
                                 JsonNode command = new ObjectMapper().readTree(httpRequest.getBodyAsString());
                                 if (command.path("type").textValue().equals("CALLBACK")) {
                                     if (context.kafkaTemplate != null) {
-                                        DroneState droneState = new DroneState(100, new Whereabouts(0, new Location(45, 7), 100, 200), command.path("target").path("droneID").asLong(), CALLED_HOME);
+                                        DroneState droneState = new DroneState(100, new Whereabouts(0, new Location(45, 7), 100, 200), command.path("target").path("droneID").asLong(), CALLED_HOME, System.currentTimeMillis());
                                         context.kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(droneState));
                                     }
                                 }

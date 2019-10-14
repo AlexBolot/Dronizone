@@ -185,6 +185,14 @@ services:
 #      KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "drones:1:1"
+  telegraf:
+    image: telegraf:latest
+    network_mode: "host"
+    volumes:
+      - ./dockers/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - kafka
+      - influxdb
 
 
   ############  GRAFANA  #################
@@ -217,13 +225,7 @@ services:
     networks:
       - dronazone-network
       - monitoring
-    environment:
-      INFLUXDB_DB: dronazone
-      INFLUXDB_ADMIN_ENABLED: "true"
-      INFLUXDB_ADMIN_USER: dronadmin
-      INFLUXDB_ADMIN_PASSWORD: dronadmin
-      INFLUXDB_USER: dronazone
-      INFLUXDB_USER_PASSWORD: dronazone
+
 
 networks:
   dronazone-network:
