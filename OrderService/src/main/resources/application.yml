@@ -11,5 +11,4 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      group-id: test_group
       group-id: order-service

@@ -1,4 +1,4 @@
-docker-compose up --build
+# docker-compose up --build
 echo "We simulate an order rpc call with a post call"
 curl -d "@./data_sets/order.json"  -H "Content-Type: application/json"  -X POST http://localhost:8082/order
 echo "we see the order 1 preparË©e it's items, and notify the server that it is ready for pickup"
