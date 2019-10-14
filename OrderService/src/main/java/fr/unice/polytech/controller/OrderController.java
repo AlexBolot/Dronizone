@@ -2,6 +2,7 @@ package fr.unice.polytech.controller;
 
 import fr.unice.polytech.entities.Order;
 import fr.unice.polytech.entities.OrderStatusMessage;
+import fr.unice.polytech.entities.Status;
 import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
 import gherkin.deps.com.google.gson.Gson;
@@ -93,7 +94,7 @@ public class OrderController {
 
     @GetMapping("/kafka")
     public void kafkaTest() {
-        kafkaTemplate.send("delivery", "{\"orderId\":2; \"status\":\"soon\"}");
+        kafkaTemplate.send("orders", "{\"orderId\":2; \"status\":\"soon\"}");
     }
 
     /**
@@ -103,14 +104,21 @@ public class OrderController {
      * @param content
      */
 
-    @KafkaListener(topics = "delivery")
+    @KafkaListener(topics = "orders")
     public void checkIfClose(String content) {
         Gson gson = new Gson();
         OrderStatusMessage osm = gson.fromJson(content, OrderStatusMessage.class);
         int orderId = osm.getOrder_id();
         String status = osm.getStatus();
-        if (status.equals("soon")) {
-            notifyDelivery(orderId);
+        Optional<Order> opt = orderRepo.findById(orderId);
+        if (!opt.isPresent()) {
+            System.err.println("err");
+        } else {
+            if (status.equals("soon")) {
+                notifyDelivery(orderId);
+                Order order = opt.get();
+                order.setStatus(Status.SOON);
+            }
         }
     }
 }

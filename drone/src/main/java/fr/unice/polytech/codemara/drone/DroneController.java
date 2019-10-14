@@ -50,7 +50,7 @@ public class DroneController {
     public String fleetBatteryStatus() {
         Iterable<Drone> drones = droneRepository.findAll();
         HashMap<Long, Double> levels = new HashMap<>();
-        drones.forEach(d->levels.put(d.getDroneID(),d.getBatteryLevel()));
+        drones.forEach(d -> levels.put(d.getDroneID(), d.getBatteryLevel()));
         try {
             return new ObjectMapper().writeValueAsString(levels);
         } catch (JsonProcessingException e) {
@@ -115,11 +115,12 @@ public class DroneController {
 
         for (Drone drone :
                 droneRepository.findAll()) {
-            if (whereabouts.getDistanceToTarget() < 200 && drone.getCurrentDelivery()!=null)
+            if (whereabouts.getDistanceToTarget() < 200 && drone.getCurrentDelivery() != null)
                 orderService.notifyDelivery(drone.getCurrentDelivery());
         }
 
     }
+
     @PostMapping(path = "/request_delivery")
     public void requireDelivery(@RequestBody Delivery delivery) {
 
@@ -135,16 +136,26 @@ public class DroneController {
     }
 
     @PostMapping(path = "/fleet/command/callback")
-    public void callbackFleet()
-    {
+    public void callbackFleet() {
         DroneCommand callbackCommand = new DroneCommand(CommandType.CALLBACK);
         droneCommander.broadcast(callbackCommand);
         Iterable<Delivery> deliveries = deliveryRepository.findAll();
         deliveries.forEach(orderService::cancel);
 
     }
-    @GetMapping(path="/deliveries")
-    public Iterable<Delivery> deliveries(){
+
+    @GetMapping("/kafkaTest")
+    public void kafkaTest() {
+        Delivery d;
+        d = new Delivery();
+        d.setOrderId(2);
+        orderService.notifyDelivery(d);
+    }
+
+
+    @GetMapping(path = "/deliveries")
+    public Iterable<Delivery> deliveries() {
         return deliveryRepository.findAll();
     }
+
 }
