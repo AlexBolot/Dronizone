@@ -116,6 +116,14 @@ public class DroneController {
         return deliveryRepository.findAll();
     }
 
+    @GetMapping("/kafkaTest")
+    public void kafkaTest() {
+        Delivery d;
+        d = new Delivery();
+        d.setOrderId(2);
+        orderService.notifyDelivery(d);
+    }
+
     @KafkaListener(topics = "drones")
     public void listen_to_drones(String message) {
         try {
