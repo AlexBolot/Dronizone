@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.Location;
 import fr.unice.polytech.codemara.drone.entities.Whereabouts;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.test.rule.EmbeddedKafkaRule;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -26,7 +29,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class DroneControllerTest {
     @Autowired
     private MockMvc mockMvc;
+    @ClassRule
+    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "drones");
+    @BeforeClass
+    public static void beforeAll(){
+        System.out.println("broker in the cucumber runner "+ rule.getEmbeddedKafka().getBrokersAsString());
+        System.setProperty("spring.kafka.bootstrap-servers",
+                rule.getEmbeddedKafka().getBrokersAsString());
 
+    }
     @Ignore
     @Test
     public void update_battery_status() throws Exception {
