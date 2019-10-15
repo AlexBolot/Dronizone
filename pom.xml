@@ -9,6 +9,7 @@
         <module>drone</module>
         <module>warehouse</module>
         <module>OrderService</module>
+        <module>WatchDog</module>
     </modules>
 
     <groupId>fr.unice.polytech.codemera</groupId>

@@ -87,6 +87,34 @@ services:
     links:
       - postgres-drone
 
+  ############  DRONE  #################
+
+  watchdog-server:
+    container_name: dronazone-watchdog-server
+    build:
+      context: watchdog
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/watchdog-1.0-SNAPSHOT.jar
+    image: dronazone-watchdog-server:latest
+    expose:
+      - 8085
+    ports:
+      - 8085:8080
+    networks:
+      - dronazone-network
+    logging:
+      driver: json-file
+    environment:
+      DATASOURCE_HOST: postgres-watchdog
+      NOTIFICATION_HOST: notification
+      ORDER_SERVICE_HOST: http://watchdog-server
+    depends_on:
+      - postgres-watchdog
+      - kafka
+    links:
+      - postgres-watchdog
+
 ############  POSTGRES  #################
 
   postgres-order:
@@ -105,11 +133,19 @@ services:
       POSTGRES_PASSWORD: dronazone
       POSTGRES_USER: dronazone
       POSTGRES_DB: dronazone
-
     networks:
       - dronazone-network
   postgres-drone:
     container_name: postgres-dronazone-drone
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: dronazone
+      POSTGRES_USER: dronazone
+      POSTGRES_DB: dronazone
+    networks:
+      - dronazone-network
+  postgres-watchdog:
+    container_name: postgres-dronazone-watchdog
     image: postgres
     environment:
       POSTGRES_PASSWORD: dronazone
