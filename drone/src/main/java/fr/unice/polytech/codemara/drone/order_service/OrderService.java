@@ -5,22 +5,17 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.unice.polytech.codemara.drone.entities.Delivery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import static fr.unice.polytech.codemara.drone.entities.OrderStatus.CANCELED;
+import static fr.unice.polytech.codemara.drone.entities.OrderStatus.DELIVERY_SOON;
 
 public class OrderService {
 
-    private Environment env;
     private final KafkaTemplate kafkaTemplate;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
-    public OrderService(Environment env, KafkaTemplate kafkaTemplate) {
-        this.env = env;
+    public OrderService(KafkaTemplate kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 
