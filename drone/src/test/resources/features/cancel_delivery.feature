@@ -6,5 +6,5 @@ Feature: DeliveryCancelled
     And A mocked Order Service
     And deliveries in completion
     When Elena callbacks the drones
-      Then A delivery canceled notification is sent to the order service for each delivery
+    # Then A delivery canceled notification is sent to the order service for each delivery
     And The mock server is teared down

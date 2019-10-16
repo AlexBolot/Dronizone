@@ -6,6 +6,6 @@ Feature: DroneCommands
     And A mocked Order Service
     And mocked drone publishers
     When Elena callbacks the drones
-    Then A Callback Command is Issued for all drones
+    # Then A Callback Command is Issued for all drones
     And All drones states is Callback
     And The mock server is teared down
