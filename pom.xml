@@ -8,6 +8,7 @@
     <modules>
         <module>drone</module>
         <module>warehouse</module>
+        <module>statistics-service</module>
         <module>OrderService</module>
     </modules>
 

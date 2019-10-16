@@ -87,7 +87,32 @@ services:
     links:
       - postgres-drone
 
-############  POSTGRES  #################
+##########  STATISTICS  ###############
+
+  statistics-server:
+    container_name: dronazone-statistics-server
+    build:
+      context: statistics-service
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: target/statistics-service-0.0.1-SNAPSHOT.jar
+    image: dronazone-statistics-server:latest
+    expose:
+      - 8087
+    ports:
+      - 8087:8080
+    networks:
+      - dronazone-network
+    logging:
+      driver: json-file
+    environment:
+      INFLUX_HOST: http://influxdb:8086
+      INFLUX_USERNAME: dronazone
+      INFLUX_PWD: dronazone
+    depends_on:
+      - kafka
+      - influxdb
+  ############  POSTGRES  #################
 
   postgres-order:
     container_name: postgres-dronazone-order
@@ -118,7 +143,7 @@ services:
     networks:
       - dronazone-network
 
-############  NOTIFICATION  #################
+  ############  NOTIFICATION  #################
 
   notification:
     container_name: dronazone-notification-mock-server
@@ -139,7 +164,7 @@ services:
     logging:
       driver: json-file
 
-############  DRONE MOCK  #################
+  ############  DRONE MOCK  #################
 
   drone-mock:
     container_name: dronazone-drone-mock-server
@@ -163,7 +188,7 @@ services:
     environment:
       DRONE_SERVICE: http://drone-server:8080/
 
-############  KAFKA  #################
+  ############  KAFKA  #################
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -210,7 +235,7 @@ services:
       - dronazone-network
       - monitoring
 
-############  INFLUX  #################
+  ############  INFLUX  #################
 
   influxdb:
     image: influxdb
@@ -225,6 +250,13 @@ services:
     networks:
       - dronazone-network
       - monitoring
+    environment:
+      INFLUXDB_DB: dronazone
+      INFLUXDB_ADMIN_ENABLED: "true"
+      INFLUXDB_ADMIN_USER: dronadmin
+      INFLUXDB_ADMIN_PASSWORD: dronadmin
+      INFLUXDB_USER: dronazone
+      INFLUXDB_USER_PASSWORD: dronazone
 
 
 networks:
