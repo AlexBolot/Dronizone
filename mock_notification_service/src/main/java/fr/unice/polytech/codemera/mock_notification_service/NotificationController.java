@@ -1,5 +1,6 @@
 package fr.unice.polytech.codemera.mock_notification_service;
 
+import fr.unice.polytech.codemera.mock_notification_service.notification.AlertNotification;
 import fr.unice.polytech.codemera.mock_notification_service.notification.CustomerNotification;
 import fr.unice.polytech.codemera.mock_notification_service.notification.OrderNotification;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
@@ -30,6 +31,16 @@ public class NotificationController {
         System.out.println("customer_name = " + notification.customer_name);
         System.out.println("payload = " + notification.payload);
         System.out.println("medium = " + notification.medium);
+        this.messagingTemplate.convertAndSend("/topic/notifications", notification);
+
+        return notification;
+    }
+
+    @PostMapping("/alert")
+    public AlertNotification notify_haley(@RequestBody AlertNotification notification){
+        System.out.println("customer_id = " + notification.target_id);
+        System.out.println("order_id = " + notification.order_id);
+        System.out.println("payload = " + notification.payload);
         this.messagingTemplate.convertAndSend("/topic/notifications", notification);
 
         return notification;

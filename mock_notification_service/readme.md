@@ -12,14 +12,22 @@ The following routes are available to emulate a notification send:
            "payload": "How are you today"
          }
 - [POST]`/notifications/customer/{target_id}/order` to send a "customer notification" the expected json format is as follow 
-         
-         
+       
+        
          {
            "target_id": 1,
            "customer_name": "George",
            "payload": "Your order is on it's way",
            "orderName": "Hamilton the musical- Full album collection"
          }
+- [POST]`/notifications/alert` to send a behaviour alert to Haley. The expected json format is as follow  
+         
+         
+         {
+           "target_id": 1,
+           "order_id": 15,
+           "payload": "I detected a strange customer behavior !!"
+         }     
          
 ##Usage
 To boot this mock as a stand alone you can
