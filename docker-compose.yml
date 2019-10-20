@@ -92,7 +92,7 @@ services:
   watchdog-server:
     container_name: dronazone-watchdog-server
     build:
-      context: watchdog
+      context: WatchDog
       dockerfile: Dockerfile
       args:
         JAR_FILE: target/watchdog-1.0-SNAPSHOT.jar
