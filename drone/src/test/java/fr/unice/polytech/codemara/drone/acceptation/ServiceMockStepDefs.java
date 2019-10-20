@@ -143,10 +143,8 @@ public class ServiceMockStepDefs {
 
     @Then("A delivery command is sent to an available drone")
     public void aDeliveryCommandIsSentToAnAvailableDrone() throws JsonProcessingException {
-        DeliveryCommand deliveryCommand = new DeliveryCommand();
-        deliveryCommand.setDelivery(deliveryRepository
-                .findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
-        deliveryCommand.setTarget(this.context.currentDrone);
+        DeliveryCommand deliveryCommand = new DeliveryCommand(this.context.currentDrone,
+                deliveryRepository.findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
 
         this.context.mockServer.verify(
                 request().withPath("/commands").withBody(new ObjectMapper().writeValueAsString(deliveryCommand))

@@ -1,5 +1,6 @@
 package fr.unice.polytech.codemara.drone.drone_service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.entities.Drone;
 import fr.unice.polytech.codemara.drone.entities.DroneStatus;
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -25,6 +27,10 @@ public class DroneCommander {
     private String externalDroneUrl;
     @Autowired
     DroneRepository droneRepository;
+
+    @Autowired
+    private KafkaTemplate kafkaTemplate;
+
     private static final Logger logger = LoggerFactory.getLogger(DroneCommand.class);
 
     public DroneCommander(Environment env) {
@@ -44,19 +50,23 @@ public class DroneCommander {
      */
     public void sendCommand(DroneCommand command) {
 
+//        try {
+//            URL url = UriComponentsBuilder.fromUriString(env.getProperty("EXTERNAL_DRONE_HOST")+"/commands")
+//                    .build().toUri().toURL();
+//            RestTemplate restTemplate = new RestTemplate();
+//            ResponseEntity<String> response
+//                    = restTemplate.postForEntity(url.toString(),command, String.class);
+//            ObjectMapper mapper = new ObjectMapper();
+//            String body = response.getBody();
+//        } catch (MalformedURLException e) {
+//            logger.error(e.toString());
+//        }
+
         try {
-            URL url = UriComponentsBuilder.fromUriString(env.getProperty("EXTERNAL_DRONE_HOST")+"/commands")
-                    .build().toUri().toURL();
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<String> response
-                    = restTemplate.postForEntity(url.toString(),command, String.class);
-            ObjectMapper mapper = new ObjectMapper();
-            String body = response.getBody();
-        } catch (MalformedURLException e) {
-            logger.error(e.toString());
+            kafkaTemplate.send("drones-commands",new ObjectMapper().writeValueAsString(command));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         }
-
-
     }
 
 

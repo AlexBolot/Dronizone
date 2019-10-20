@@ -12,9 +12,10 @@ import lombok.RequiredArgsConstructor;
 @Data
 @RequiredArgsConstructor
 @AllArgsConstructor
-
 public class DroneCommand {
+
     private final CommandType type;
+
     private Drone target;
 
     /**

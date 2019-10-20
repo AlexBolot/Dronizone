@@ -10,15 +10,14 @@ import javax.persistence.*;
 @Data
 @RequiredArgsConstructor
 public class Drone {
-    @Id
-    @GeneratedValue
+
     private long droneID;
+
     private double batteryLevel;
+
     private DroneStatus droneStatus;
-    @ManyToOne
+
     private Whereabouts whereabouts;
-    @OneToOne
-    public Delivery currentDelivery;
 
     public Drone(double batteryLevel) {
         this.batteryLevel = batteryLevel;
