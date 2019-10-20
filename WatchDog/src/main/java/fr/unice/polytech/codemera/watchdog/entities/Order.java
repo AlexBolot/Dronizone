@@ -1,5 +1,6 @@
 package fr.unice.polytech.codemera.watchdog.entities;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import javax.persistence.Entity;
@@ -9,6 +10,7 @@ import javax.persistence.Id;
 
 @Entity
 @Data
+@AllArgsConstructor
 public class Order {
 
     @Id
@@ -20,7 +22,5 @@ public class Order {
 
     public enum OrderStatus {
         PENDING,
-        READY,
-        TAKEN
     }
 }

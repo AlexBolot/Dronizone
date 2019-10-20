@@ -87,7 +87,7 @@ services:
     links:
       - postgres-drone
 
-  ############  DRONE  #################
+  ############  WATCHDOG  #################
 
   watchdog-server:
     container_name: dronazone-watchdog-server
@@ -108,7 +108,7 @@ services:
     environment:
       DATASOURCE_HOST: postgres-watchdog
       NOTIFICATION_HOST: notification
-      ORDER_SERVICE_HOST: http://watchdog-server
+      ORDER_SERVICE_HOST: http://order-server
     depends_on:
       - postgres-watchdog
       - kafka
