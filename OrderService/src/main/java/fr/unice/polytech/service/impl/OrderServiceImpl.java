@@ -22,7 +22,7 @@ import java.util.Optional;
 @Service
 @AutoJsonRpcServiceImpl
 public class OrderServiceImpl implements OrderService {
-
+    // FIXME: 20/10/2019 Kill it with fire, and replace it with a kafka topic post
     private static final String WAREHOUSE_PATH = "/warehouse/orders";
     private static final String WAREHOUSE_URL = "http://localhost:8080";
 

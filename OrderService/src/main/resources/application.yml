@@ -9,6 +9,6 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     generate-ddl: true
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_HOST}:9092
     consumer:
       group-id: order-service

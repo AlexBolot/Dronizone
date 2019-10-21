@@ -11,3 +11,4 @@ spring:
   kafka:
     consumer:
       group-id: drone-service
+    bootstrap-servers: ${KAFKA_HOST}:9092

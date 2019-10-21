@@ -40,16 +40,19 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
         <!-- jsonrpc4j -->
         <dependency>
             <groupId>com.github.briandilley.jsonrpc4j</groupId>
             <artifactId>jsonrpc4j</artifactId>
             <version>1.5.3</version>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>

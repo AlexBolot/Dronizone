@@ -35,6 +35,7 @@ public class DroneMockController {
 
     private final static String DRONE_PATH = "/drone/update_battery_status";
 
+    //    private final Arraylist<> commandHistory;
     public DroneMockController(Environment env, KafkaTemplate kafkaTemplate) {
         batteryLevel = 80;
         droneId = 2;

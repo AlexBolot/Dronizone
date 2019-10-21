@@ -14,7 +14,7 @@ services:
     expose:
       - 8081
     ports:
-      - 8081:8080
+      - 127.0.0.1:8081:8080
     networks:
       - dronazone-network
     logging:
@@ -42,7 +42,8 @@ services:
     expose:
       - 8082
     ports:
-      - 8082:8080
+      - 127.0.0.1:8082:8080
+      - 127.0.0.1:8282:8082
     networks:
       - dronazone-network
     logging:
@@ -53,6 +54,7 @@ services:
       DATASOURCE_USERNAME: dronazone
       DATASOURCE_PWD: dronazone
       WAREHOUSE_HOST: http://warehouse-server:8080
+      KAFKA_HOST: http://kafka
     depends_on:
       - postgres-order
       - kafka
@@ -72,7 +74,7 @@ services:
     expose:
       - 8083
     ports:
-      - 8083:8080
+      - 127.0.0.1:8083:8080
     networks:
       - dronazone-network
     logging:
@@ -80,7 +82,9 @@ services:
     environment:
       DATASOURCE_HOST: postgres-order
       NOTIFICATION_HOST: notification
+      KAFKA_HOST: http://kafka
       ORDER_SERVICE_HOST: http://order-server
+
     depends_on:
       - postgres-drone
       - kafka
@@ -100,7 +104,7 @@ services:
     expose:
       - 8087
     ports:
-      - 8087:8080
+      - 127.0.0.1:8087:8080
     networks:
       - dronazone-network
     logging:
@@ -156,7 +160,7 @@ services:
     expose:
       - 8080
     ports:
-      - 44444:8080
+      - 127.0.0.1:44444:8080
     depends_on:
       - kafka
     networks:
@@ -177,7 +181,7 @@ services:
     expose:
       - 8080
     ports:
-      - 8084:8080
+      - 127.0.0.1:8084:8080
     depends_on:
       - kafka
       - drone-server
@@ -194,22 +198,25 @@ services:
     image: wurstmeister/zookeeper
     container_name: zookeeper
     ports:
-      - 2181:2181
-
+      - 127.0.0.1:2181:2181
+    networks:
+      - dronazone-network
   kafka:
     image: wurstmeister/kafka
     container_name: kafka
     expose:
       - 9092
     ports:
-      - 9092:9092
+      - 127.0.0.1:9092:9092
     depends_on:
       - zookeeper
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
-#      KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
+      #      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "drones:1:1,delivery:1:1"
+    networks:
+      - dronazone-network
   telegraf:
     image: telegraf:latest
     network_mode: "host"
@@ -228,7 +235,7 @@ services:
     expose:
       - 3000
     ports:
-      - 3000:3000
+      - 127.0.0.1:3000:3000
     depends_on:
       - kafka
     networks:
@@ -244,7 +251,7 @@ services:
     expose:
       - 8086
     ports:
-      - 8086:8086
+      - 127.0.0.1:8086:8086
     depends_on:
       - kafka
     networks:
@@ -258,7 +265,18 @@ services:
       INFLUXDB_USER: dronazone
       INFLUXDB_USER_PASSWORD: dronazone
 
-
+#  start-holder:
+#    image: dadarek/wait-for-dependencies
+#    depends_on:
+#      - order-server
+#      - drone-server
+#      - drone-mock
+#      - notification
+#      - warehouse-server
+#    command: order-server:8080 drone-server:8080 drone-mock:8080 notification:8080 warehouse-server:8080
+#    networks:
+#      - dronazone-network
+#      - monitoring
 networks:
   dronazone-network:
     driver: bridge
