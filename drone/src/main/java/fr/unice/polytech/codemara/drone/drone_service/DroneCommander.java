@@ -18,15 +18,19 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.persistence.criteria.CriteriaBuilder;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Used to send commands to the drones
  */
 public class DroneCommander {
     private final Environment env;
-    private String externalDroneUrl;
+
     @Autowired
-    DroneRepository droneRepository;
+    private DroneRepository droneRepository;
 
     @Autowired
     private KafkaTemplate kafkaTemplate;
@@ -34,43 +38,35 @@ public class DroneCommander {
     private static final Logger logger = LoggerFactory.getLogger(DroneCommand.class);
 
     public DroneCommander(Environment env) {
-        this.env= env;
+        this.env = env;
     }
 
     public void broadcast(DroneCommand command) {
-        for (Drone drone :
-                this.getActiveDrones()) {
+        for (Drone drone : this.getActiveDrones()) {
             this.sendCommand(command.copyWith(drone));
         }
     }
 
     /**
      * Send a command to a drone
+     *
      * @param command {@link DroneCommand}
      */
     public void sendCommand(DroneCommand command) {
 
-//        try {
-//            URL url = UriComponentsBuilder.fromUriString(env.getProperty("EXTERNAL_DRONE_HOST")+"/commands")
-//                    .build().toUri().toURL();
-//            RestTemplate restTemplate = new RestTemplate();
-//            ResponseEntity<String> response
-//                    = restTemplate.postForEntity(url.toString(),command, String.class);
-//            ObjectMapper mapper = new ObjectMapper();
-//            String body = response.getBody();
-//        } catch (MalformedURLException e) {
-//            logger.error(e.toString());
-//        }
-
         try {
-            kafkaTemplate.send("drones-commands",new ObjectMapper().writeValueAsString(command));
+            Map<String, Object> params = new HashMap<>();
+            params.put("command", command.getType().toString());
+            params.put("droneId", command.getTarget().getDroneID());
+            params.put("payload", command.getPayload());
+            kafkaTemplate.send("drone-commands", new ObjectMapper().writeValueAsString(params));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
     }
 
 
-    private Iterable<Drone> getActiveDrones(){
+    private Iterable<Drone> getActiveDrones() {
         return droneRepository.getDronesByDroneStatus(DroneStatus.ACTIVE);
     }
 }

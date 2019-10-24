@@ -8,7 +8,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 @Configuration
 public class OrderServiceConfiguration {
     @Bean
-    public OrderService orderService(Environment env, KafkaTemplate kafkaTemplate) {
-        return new OrderService(env, kafkaTemplate);
+    public OrderService orderService() {
+        return new OrderService();
     }
 }

@@ -2,11 +2,14 @@ package fr.unice.polytech.codemara.drone.acceptation;
 
 import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.Drone;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * This should serve as singleton context for acceptation tests
@@ -41,6 +44,15 @@ class IntegrationContext {
      * for one drone test use current drone
      */
     List<Drone> currentDroneList;
+
+    KafkaMessageListenerContainer<String, String> orderContainer;
+    KafkaMessageListenerContainer<String, String> droneContainer;
+
+    BlockingQueue<ConsumerRecord<String, String>> orderRecords;
+    BlockingQueue<ConsumerRecord<String, String>> droneRecords;
+
+    static String ORDER_TOPIC = "orders";
+    static String DRONE_TOPIC = "drones-commands";
 
 
 

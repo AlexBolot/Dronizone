@@ -2,6 +2,7 @@ package fr.unice.polytech.codemara.drone.acceptation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.entities.*;
+import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
 import fr.unice.polytech.codemara.drone.repositories.WhereaboutsRepository;
@@ -88,6 +89,7 @@ public class DroneStepDefs {
     @When("Elena callbacks the drones")
     public void elenaCallbacksTheDrones() throws Exception {
         mockMvc.perform(post("/drone/fleet/command/callback")).andExpect(status().isOk());
+        Thread.sleep(10000);
     }
 
 
@@ -99,16 +101,16 @@ public class DroneStepDefs {
 
     @When("Klaus requires a delivery")
     public void klausRequiresADelivery() throws Exception {
+        DeliveryDTO deliveryDTO = new DeliveryDTO(1, 1, new Location(10, 10), new Location(11, 11), false);
         Delivery test_delivery = new Delivery();
         test_delivery.setItemId(1);
         test_delivery.setOrderId(1);
         test_delivery.setPickup_location(new Location(10, 10));
         test_delivery.setTarget_location(new Location(11, 11));
-        String test_delivery_json = new ObjectMapper().writeValueAsString(test_delivery);
+        String test_delivery_json = new ObjectMapper().writeValueAsString(deliveryDTO);
         this.context.currentDelivery = test_delivery;
-        MockHttpServletRequestBuilder put = post("/drone/request_delivery");
-        put = put.contentType("application/json");
-        mockMvc.perform(put.content(test_delivery_json)).andExpect(status().isOk());
+        this.context.kafkaTemplate.send("order-packed", test_delivery_json);
+        Thread.sleep(1000);
     }
 
     @And("The sent delivery is registered")

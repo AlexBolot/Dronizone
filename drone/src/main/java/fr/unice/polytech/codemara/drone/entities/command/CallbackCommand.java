@@ -11,6 +11,7 @@ public class CallbackCommand extends DroneCommand {
     public CallbackCommand(CommandType type, Location baseLocation) {
         super(type);
         this.baseLocation = baseLocation;
+        this.setPayload(baseLocation);
     }
 
 }

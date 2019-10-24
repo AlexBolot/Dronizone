@@ -11,11 +11,10 @@ import static fr.unice.polytech.codemara.drone.entities.command.CommandType.DELI
 
 @Data
 public class DeliveryCommand extends DroneCommand {
-
     private final Delivery delivery;
 
     public DeliveryCommand(Drone target, Delivery delivery) {
-        super(DELIVERY, target);
+        super(DELIVERY, target, delivery);
         this.delivery = delivery;
     }
 

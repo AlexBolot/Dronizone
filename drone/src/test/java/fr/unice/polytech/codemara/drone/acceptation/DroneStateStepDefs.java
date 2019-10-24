@@ -30,7 +30,6 @@ public class DroneStateStepDefs {
     public void theDistanceGoesUnderM(int distance) throws JsonProcessingException {
         DroneState data = new DroneState(90, new Whereabouts(10, new Location(45, 7), 100, distance - 1), this.context.currentDrone.getDroneID(), DroneStatus.ACTIVE, System.currentTimeMillis());
         context.kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(data));
-
     }
 
     @And("mocked drone publishers")
@@ -42,7 +41,7 @@ public class DroneStateStepDefs {
 
         // create a Kafka producer factory
         ProducerFactory<String, String> producerFactory =
-                new DefaultKafkaProducerFactory<String, String>(
+                new DefaultKafkaProducerFactory<>(
                         senderProperties);
 
         // create a Kafka template

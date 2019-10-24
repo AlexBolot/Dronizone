@@ -6,6 +6,7 @@ import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
 import fr.unice.polytech.codemara.drone.entities.*;
 import fr.unice.polytech.codemara.drone.entities.command.*;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
+import fr.unice.polytech.codemara.drone.entities.dto.DeliveryUpdateDTO;
 import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
@@ -16,6 +17,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
@@ -25,6 +27,7 @@ import java.util.Optional;
 public class DroneController {
 
     private static final Logger logger = LoggerFactory.getLogger(DroneController.class);
+
     private final DroneCommander droneCommander;
     private final DroneRepository droneRepository;
     private final DeliveryRepository deliveryRepository;
@@ -81,68 +84,76 @@ public class DroneController {
         });
     }
 
-
-    @PostMapping(path = "/request_delivery")
-    public void requireDelivery(@RequestBody DeliveryDTO deliveryDTO) {
-        Delivery delivery = new Delivery();
-        delivery.setPickup_location(deliveryDTO.getPickup_location());
-        delivery.setTarget_location(deliveryDTO.getTarget_location());
-        delivery.setItemId(deliveryDTO.getItemId());
-        delivery.setOrderId(deliveryDTO.getOrderId());
-        deliveryRepository.save(delivery);
-        Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
-        Drone drone = null;
-        if (drones.hasNext())
-            drone = drones.next();
-        DeliveryCommand deliveryCommand = new DeliveryCommand(drone , delivery);
-        droneCommander.sendCommand(deliveryCommand);
-    }
-
+    /**
+     * Method to cancel all deliveries for all drones to the base location and send a cancel notification event
+     */
     @PostMapping(path = "/fleet/command/callback")
     public void callbackFleet() {
         DroneCommand callbackCommand = new CallbackCommand(CommandType.CALLBACK, baseLocation);
         droneCommander.broadcast(callbackCommand);
         Iterable<Delivery> deliveries = deliveryRepository.findAll();
-        deliveries.forEach(orderService::cancel);
-        deliveries.forEach(delivery -> kafkaTemplate.send("deliveryPostponed", String.valueOf(delivery.getOrderId())));
+        deliveries.forEach(orderService::notifyDeliveryCancel);
     }
 
     @GetMapping(path = "/deliveries")
     public Iterable<Delivery> deliveries() {
         return deliveryRepository.findAll();
     }
-
-    @GetMapping("/kafkaTest")
-    public void kafkaTest() {
-        Delivery d;
-        d = new Delivery();
-        d.setOrderId(2);
-        orderService.notifyDelivery(d);
-    }
-    @GetMapping("/kafkaTest2")
-    public void kafkaTest2() {
-        Delivery delivery = new Delivery();
-        delivery.setId(1);
-        delivery.setItemId(2);
-        delivery.setOrderId(3);
-        delivery.setPickup_location(new Location(45, 6));
-        delivery.setTarget_location(new Location(45, 8));
-        Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
-        Drone drone = null;
-        if (drones.hasNext())
-            drone = drones.next();
-        DroneCommand deliveryCommand = new DeliveryCommand(drone, delivery);
+    @GetMapping(path = "/drones")
+    public Iterable<Drone> getDrones() {
+        return droneRepository.findAll();
     }
 
-    @KafkaListener(topics = "drones")
+    /**
+     * Method that listen if new Order are packed and ready to be picked up by an available drone we will choose
+     *
+     * @param message The delivery that the drone will go pick up and deliver to customer location
+     */
+    @KafkaListener(topics = "order-packed")
+    public void newOrderPacked(String message) {
+        logger.debug(message);
+        try {
+            DeliveryDTO deliveryDTO = new ObjectMapper().readValue(message, DeliveryDTO.class);
+            Delivery delivery = new Delivery();
+            delivery.setPickup_location(deliveryDTO.getPickup_location());
+            delivery.setTarget_location(deliveryDTO.getTarget_location());
+            delivery.setItemId(deliveryDTO.getItemId());
+            delivery.setOrderId(deliveryDTO.getOrderId());
+            deliveryRepository.save(delivery);
+
+            Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
+            Drone drone = null;
+            if (drones.hasNext())
+                drone = drones.next();
+            drone.setCurrentDelivery(delivery);
+            droneRepository.save(drone);
+            DeliveryCommand deliveryCommand = new DeliveryCommand(drone, delivery);
+            droneCommander.sendCommand(deliveryCommand);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Method that listen the update status of all drone
+     * If the droneId is under 0, we will send a new INITIALISATION command to set a new Id to the drone
+     * If the drone change state, we will save the new state
+     * If the drone is under 200 meter from the target location, we will send a soon to be delivered notification event
+     *
+     * @param message The status that contain the whereabouts, the id, the battery level and a timestamp
+     */
+    @KafkaListener(topics = "drone-status")
     public void listen_to_drones(String message) {
+        logger.debug(message);
         try {
             DroneState state = new ObjectMapper().readValue(message, DroneState.class);
             Optional<Drone> result = droneRepository.findById(state.getDrone_id());
 
-            if (state.getWhereabouts().getDistanceToTarget() < 200 && result.isPresent() && !result.get().getCurrentDelivery().isNotified()) {
+            logger.debug(result.toString());
+
+            if (state.getWhereabouts().getDistanceToTarget() < 200 && result.isPresent() && result.get().getCurrentDelivery() != null && !result.get().getCurrentDelivery().isNotified()) {
                 Delivery delivery = result.get().getCurrentDelivery();
-                orderService.notifyDelivery(delivery);
+                orderService.notifyDeliverySoon(delivery);
                 delivery.setNotified(true);
                 deliveryRepository.save(delivery);
             }
@@ -153,6 +164,7 @@ public class DroneController {
                     droneRepository.save(drone);
                 }
             });
+
             if (state.getDrone_id() < 0) {
                 Drone oldDrone = new Drone();
                 oldDrone.setDroneStatus(state.getDroneStatus());
@@ -164,9 +176,22 @@ public class DroneController {
                 droneCommander.sendCommand(initCommand);
             }
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error(e.toString());
         }
 
 
     }
+
+    @KafkaListener(topics = "drone-delivery-update")
+    public void dronesPickupReceiver(String message) {
+        logger.info("Drones has pickup delivery : " + message);
+        try {
+            DeliveryUpdateDTO deliveryUpdate = new ObjectMapper().readValue(message, DeliveryUpdateDTO.class);
+            System.out.println(deliveryUpdate);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
