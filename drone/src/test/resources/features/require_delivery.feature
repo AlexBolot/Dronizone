@@ -6,6 +6,7 @@ Feature: Requiring delivery
   Scenario: Klaus requires a delivery
     Given A Mocked External Drone Commander
     And a free drone
+    And mocked drone listener
     When Klaus requires a delivery
     Then A delivery command is sent to an available drone
     And The sent delivery is registered

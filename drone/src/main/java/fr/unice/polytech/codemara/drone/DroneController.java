@@ -3,14 +3,8 @@ package fr.unice.polytech.codemara.drone;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
-import fr.unice.polytech.codemara.drone.entities.Delivery;
-import fr.unice.polytech.codemara.drone.entities.Drone;
-import fr.unice.polytech.codemara.drone.entities.DroneState;
-import fr.unice.polytech.codemara.drone.entities.DroneStatus;
-import fr.unice.polytech.codemara.drone.entities.command.CommandType;
-import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
-import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
-import fr.unice.polytech.codemara.drone.entities.command.InitCommand;
+import fr.unice.polytech.codemara.drone.entities.*;
+import fr.unice.polytech.codemara.drone.entities.command.*;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
 import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
@@ -38,13 +32,17 @@ public class DroneController {
     private final KafkaTemplate kafkaTemplate;
     private final WhereaboutsRepository whereaboutsRepository;
 
-    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, WhereaboutsRepository whereaboutsRepository, OrderService orderService, KafkaTemplate kafkaTemplate) {
+    private final Location baseLocation;
+
+
+    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, OrderService orderService, WhereaboutsRepository whereaboutsRepository, KafkaTemplate kafkaTemplate) {
         this.droneCommander = droneCommander;
         this.droneRepository = droneRepository;
         this.deliveryRepository = deliveryRepository;
         this.orderService = orderService;
         this.whereaboutsRepository = whereaboutsRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.baseLocation = new Location(45, 7);
     }
 
     /**
@@ -96,15 +94,13 @@ public class DroneController {
         Drone drone = null;
         if (drones.hasNext())
             drone = drones.next();
-        DeliveryCommand deliveryCommand = new DeliveryCommand();
-        deliveryCommand.setDelivery(delivery);
-        deliveryCommand.setTarget(drone);
+        DeliveryCommand deliveryCommand = new DeliveryCommand(drone, delivery);
         droneCommander.sendCommand(deliveryCommand);
     }
 
     @PostMapping(path = "/fleet/command/callback")
     public void callbackFleet() {
-        DroneCommand callbackCommand = new DroneCommand(CommandType.CALLBACK);
+        DroneCommand callbackCommand = new CallbackCommand(CommandType.CALLBACK, baseLocation);
         droneCommander.broadcast(callbackCommand);
         Iterable<Delivery> deliveries = deliveryRepository.findAll();
         deliveries.forEach(orderService::cancel);
@@ -122,6 +118,21 @@ public class DroneController {
         d = new Delivery();
         d.setOrderId(2);
         orderService.notifyDelivery(d);
+    }
+
+    @GetMapping("/kafkaTest2")
+    public void kafkaTest2() {
+        Delivery delivery = new Delivery();
+        delivery.setId(1);
+        delivery.setItemId(2);
+        delivery.setOrderId(3);
+        delivery.setPickup_location(new Location(45, 6));
+        delivery.setTarget_location(new Location(45, 8));
+        Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
+        Drone drone = null;
+        if (drones.hasNext())
+            drone = drones.next();
+        DroneCommand deliveryCommand = new DeliveryCommand(drone, delivery);
     }
 
     @KafkaListener(topics = "drones")

@@ -9,6 +9,6 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     generate-ddl: true
   kafka:
+    bootstrap-servers: ${KAFKA_HOST}:9092
     consumer:
       group-id: drone-service
-    bootstrap-servers: ${KAFKA_HOST}:9092

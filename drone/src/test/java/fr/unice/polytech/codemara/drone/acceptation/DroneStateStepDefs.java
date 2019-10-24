@@ -48,13 +48,14 @@ public class DroneStateStepDefs {
         // create a Kafka template
         context.kafkaTemplate = new KafkaTemplate<>(producerFactory);
 
+
     }
 
     @When("A new drone sends a state update")
     public void aNewDroneSendsAStateUpdate() throws JsonProcessingException {
         Whereabouts whereabouts = new Whereabouts();
         whereabouts.setDistanceToTarget(300);
-        whereabouts.setLocation(new Location(45,7));
+        whereabouts.setLocation(new Location(45, 7));
         whereabouts.setAltitude(100);
         DroneState data = new DroneState(90,
                 whereabouts,
@@ -64,4 +65,5 @@ public class DroneStateStepDefs {
         this.context.currentDrone = new Drone();
         this.context.currentDrone.setDroneID(-10);
     }
+
 }

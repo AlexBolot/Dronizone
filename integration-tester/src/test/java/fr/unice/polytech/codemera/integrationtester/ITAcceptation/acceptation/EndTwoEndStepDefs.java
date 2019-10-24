@@ -1,17 +1,25 @@
 package fr.unice.polytech.codemera.integrationtester.ITAcceptation.acceptation;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import gherkin.deps.com.google.gson.JsonArray;
 import gherkin.deps.com.google.gson.JsonElement;
 import gherkin.deps.com.google.gson.JsonObject;
 import gherkin.deps.com.google.gson.JsonParser;
 import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
+import static com.jayway.jsonpath.internal.path.PathCompiler.fail;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class EndTwoEndStepDefs {
 
@@ -27,19 +35,34 @@ public class EndTwoEndStepDefs {
     private String warehouse_base_url = "http://" + WAREHOUSE_HOST + ":" + WAREHOUSE_PORT;
     private String notification_mock_url = "http://localhost:44444";
     private String drone_service_url = "http://localhost:8083";
+    private String drone_mock_url = "http://localhost:8084";
+    private List<Long> currentOrderIds = new ArrayList<>();
+
+    @Given("All Server Started")
+    public void allServerStarted() {
+        serverStarted("http://localhost:8081", "Warehouse");
+        serverStarted("http://localhost:8082", "Order");
+        serverStarted("http://localhost:8083", "Drone");
+    }
 
     @When("Roger passes {int} orders")
     public void rogerPassesOrders(int arg0) {
 
         JsonElement first_order = orderQueryJson("Item1");
-        JsonElement second_order = orderQueryJson("Item2");
         restTemplate = new RestTemplate();
         String orderServiceUrl = "http://" + ORDER_HOST + ":" + ORDER_PORT + "/order";
-        restTemplate.postForEntity(orderServiceUrl, first_order.getAsJsonObject().toString(), String.class);
-        restTemplate.postForEntity(orderServiceUrl, second_order.getAsJsonObject().toString(), String.class);
+        ResponseEntity<String> order1 = restTemplate.postForEntity(orderServiceUrl, first_order.getAsJsonObject().toString(), String.class);
+        JsonObject result_order_one = new JsonParser().parse(order1.getBody()).getAsJsonObject().getAsJsonObject("result");
+        this.customer_id = result_order_one.getAsJsonObject("customer").get("id").getAsLong();
         this.passedOrders.add(first_order);
+        JsonElement second_order = orderQueryJson("Item2");
+        JsonObject result_order_two = new JsonParser().parse(
+                Objects.requireNonNull(restTemplate.postForEntity(orderServiceUrl,
+                        second_order.getAsJsonObject().toString(), String.class).getBody()))
+                .getAsJsonObject().getAsJsonObject("result");
+        this.currentOrderIds.add(result_order_one.get("id").getAsLong());
+        this.currentOrderIds.add(result_order_two.get("id").getAsLong());
         this.passedOrders.add(second_order);
-
     }
 
     /**
@@ -81,8 +104,9 @@ public class EndTwoEndStepDefs {
     @Then("He sees the passed orders")
     public void heSeesThePassedOrders() {
         assertEquals(2, this.warehouse_orders_json.getAsJsonArray().size());
-        JsonElement first_order = this.warehouse_orders_json.getAsJsonArray().get(0);
-        JsonElement secondOrder = this.warehouse_orders_json.getAsJsonArray().get(1);
+        JsonArray json_orders = this.warehouse_orders_json.getAsJsonArray();
+        JsonElement first_order = json_orders.get(json_orders.size() - 2);
+        JsonElement secondOrder = json_orders.get(json_orders.size() - 1);
         assertEquals(customer_id, first_order.getAsJsonObject().get("customer_id").getAsLong());
         assertEquals(customer_id, secondOrder.getAsJsonObject().get("customer_id").getAsLong());
     }
@@ -99,12 +123,17 @@ public class EndTwoEndStepDefs {
 
     @Then("{int} drones receives delivery assignement commands")
     public void dronesReceivesDeliveryAssignementCommands(int arg0) {
-//        fail("Should query the drone mock for command reception");
+        restTemplate = new RestTemplate();
+        ResponseEntity<JsonNode> commands = restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/commands", JsonNode.class);
+        JsonNode json = commands.getBody();
+        List<JsonNode> delivery_commands_id = json.findValues("orderId");
+        assertTrue(delivery_commands_id.stream().map(n -> n.asLong(-1)).filter(l -> this.currentOrderIds.contains(l)).count() == 2);
+        System.out.println(commands);
     }
 
     @When("Drone for the order {int} approches his target")
     public void droneForTheOrderApprochesHisTarget(int arg0) {
-        //        fail("Should trigger the mock service for delivery approach");
+        fail("Should trigger the mock service for delivery approach");
     }
 
     @Then("A delivery notification is sent to Roger for order {int}")
@@ -176,5 +205,26 @@ public class EndTwoEndStepDefs {
     @And("Elena can see position history for the drone for order {int} from before the order to now")
     public void elenaCanSeePositionHistoryForTheDroneForOrderFromBeforeTheOrderToNow(int order_index) {
 
+    }
+
+    public boolean serverStarted(String url, String serverName) {
+        RestTemplate restTemplate = new RestTemplate();
+        boolean serverStarted = false;
+        int count = 0;
+        while (!serverStarted && count < 60) {
+            try {
+                restTemplate.getForEntity(url, String.class);
+                serverStarted = true;
+            } catch (RestClientException e) {
+                System.out.println("Waiting for " + serverName);
+                count++;
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+        return count < 60;
     }
 }

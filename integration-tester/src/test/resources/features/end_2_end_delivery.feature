@@ -1,6 +1,8 @@
 # Created by Gregoire Peltier at 16/10/2019
 Feature: Full end to end delivery and tracking of a drone order
   # Enter feature description here
+  Background:
+    Given All Server Started
   Scenario: 2 Orders are placed, one is delivered, the other trigger's notifications
     When Roger passes 2 orders
     And Klaus list the orders to be packed

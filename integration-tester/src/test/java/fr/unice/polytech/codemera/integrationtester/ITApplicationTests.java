@@ -43,6 +43,7 @@ public class ITApplicationTests {
         assertTrue(serverStarted("http://localhost:8083", "Drone"));
     }
 
+    @Test
     public void warehouseServerBoot() {
         assertTrue(serverStarted("http://localhost:8081", "Warehouse"));
     }

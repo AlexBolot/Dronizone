@@ -49,7 +49,7 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(Status.PENDING);
 
         itemRepo.save(order.getItem());
-        customerRepo.save(order.getCustomer());
+        order.setCustomer(customerRepo.save(order.getCustomer()));
         coordRepo.save(order.getCoord());
         orderRepo.save(order);
 
