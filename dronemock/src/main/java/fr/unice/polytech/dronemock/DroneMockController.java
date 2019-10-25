@@ -48,7 +48,6 @@ public class DroneMockController {
         currentDrone.setWhereabouts(new Whereabouts(new Location(45, 7), 10, 0));
         currentDrone.setDroneStatus(DroneStatus.ASIDE);
     }
-
     @GetMapping("/debug/finishPickup")
     public void finishPickup() {
         if (this.currentDelivery != null && !this.deliveryPickedUp) {

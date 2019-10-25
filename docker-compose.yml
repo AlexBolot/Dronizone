@@ -82,7 +82,7 @@ services:
       DATASOURCE_HOST: postgres-order
       NOTIFICATION_HOST: notification
       KAFKA_HOST: http://kafka
-      ORDER_SERVICE_HOST: http://order-server
+      ORDER_SERVICE_HOST: http://order-server:8080
       EXTERNAL_DRONE_HOST: http://drone-mock
 
     depends_on:

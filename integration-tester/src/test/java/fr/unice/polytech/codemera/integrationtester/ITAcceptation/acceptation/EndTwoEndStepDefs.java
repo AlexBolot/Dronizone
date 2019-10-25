@@ -16,8 +16,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-import static com.jayway.jsonpath.internal.path.PathCompiler.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -54,7 +54,7 @@ public class EndTwoEndStepDefs {
         ResponseEntity<String> order1 = restTemplate.postForEntity(orderServiceUrl, first_order.getAsJsonObject().toString(), String.class);
         JsonObject result_order_one = new JsonParser().parse(order1.getBody()).getAsJsonObject().getAsJsonObject("result");
         this.customer_id = result_order_one.getAsJsonObject("customer").get("id").getAsLong();
-        this.passedOrders.add(first_order);
+        this.passedOrders.add(first_order.getAsJsonObject().get("params").getAsJsonObject().get("order"));
         JsonElement second_order = orderQueryJson("Item2");
         JsonObject result_order_two = new JsonParser().parse(
                 Objects.requireNonNull(restTemplate.postForEntity(orderServiceUrl,
@@ -62,7 +62,7 @@ public class EndTwoEndStepDefs {
                 .getAsJsonObject().getAsJsonObject("result");
         this.currentOrderIds.add(result_order_one.get("id").getAsLong());
         this.currentOrderIds.add(result_order_two.get("id").getAsLong());
-        this.passedOrders.add(second_order);
+        this.passedOrders.add(second_order.getAsJsonObject().get("params").getAsJsonObject().get("order"));
     }
 
     /**
@@ -103,7 +103,6 @@ public class EndTwoEndStepDefs {
 
     @Then("He sees the passed orders")
     public void heSeesThePassedOrders() {
-        assertEquals(2, this.warehouse_orders_json.getAsJsonArray().size());
         JsonArray json_orders = this.warehouse_orders_json.getAsJsonArray();
         JsonElement first_order = json_orders.get(json_orders.size() - 2);
         JsonElement secondOrder = json_orders.get(json_orders.size() - 1);
@@ -127,20 +126,26 @@ public class EndTwoEndStepDefs {
         ResponseEntity<JsonNode> commands = restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/commands", JsonNode.class);
         JsonNode json = commands.getBody();
         List<JsonNode> delivery_commands_id = json.findValues("orderId");
+        //  25/10/2019 Uncomment for commit
         assertTrue(delivery_commands_id.stream().map(n -> n.asLong(-1)).filter(l -> this.currentOrderIds.contains(l)).count() == 2);
         System.out.println(commands);
     }
 
     @When("Drone for the order {int} approches his target")
-    public void droneForTheOrderApprochesHisTarget(int arg0) {
-        fail("Should trigger the mock service for delivery approach");
+    public void droneForTheOrderApprochesHisTarget(int drone_index) {
+        restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/finishDelivery", JsonNode.class);
     }
 
     @Then("A delivery notification is sent to Roger for order {int}")
     public void aDeliveryNotificationIsSentToRogerForOrder(int order_index) {
         restTemplate = new RestTemplate();
-        ResponseEntity<String> notifications = restTemplate.getForEntity(this.notification_mock_url + "/notifications/mock/notification_history", String.class);
-        System.out.println(notifications.getBody());
+        ResponseEntity<JsonNode> notifications = restTemplate.getForEntity(this.notification_mock_url + "/notifications/mock/notification_history", JsonNode.class);
+        List<String> items = notifications.getBody().findValues("item_name").stream().map(n -> n.toString()).collect(Collectors.toList());
+        for (JsonElement order :
+                this.passedOrders) {
+            String itemName = order.getAsJsonObject().get("item").getAsJsonObject().get("name").toString();
+            assertTrue("Should  Notification for item " + itemName, items.contains(itemName));
+        }
     }
 
     @When("Drone for the order {int} delivers")
@@ -174,7 +179,6 @@ public class EndTwoEndStepDefs {
 
     @And("Elena calls back the drone for the order {int} for battery failure")
     public void elenaCallsBackTheDroneForTheOrderForBatteryFailure(int order_index) {
-//        MockHttpServletRequestBuilder req = put("/drone/set_drone_aside/" + this.activeDrone.getDroneID() + "/" + DroneStatus.CALLED_HOME + "");
         restTemplate.put(this.drone_service_url + "/drone/set_drone_aside/" + 2 + "/CALLED_HOME", String.class);
     }
 
@@ -191,14 +195,14 @@ public class EndTwoEndStepDefs {
 
     @And("Elena issues a global callback command")
     public void elenaIssuesAGlobalCallbackCommand() {
-        restTemplate.postForEntity(this.drone_service_url + "/fleet/command/callback", "", String.class);
+        restTemplate.postForEntity(this.drone_service_url + "/drone/fleet/command/callback", "", String.class);
 
     }
 
     @Then("Roger receives a delivery cancel notification for order {int}")
     public void rogerReceivesADeliveryCancelNotificationForOrder(int order_id) {
         restTemplate = new RestTemplate();
-        ResponseEntity<String> notifications = restTemplate.getForEntity(this.notification_mock_url + "/mock/notification_history", String.class);
+        ResponseEntity<String> notifications = restTemplate.getForEntity(this.notification_mock_url + "/notifications/mock/notification_history", String.class);
         System.out.println(notifications.getBody());
     }
 
