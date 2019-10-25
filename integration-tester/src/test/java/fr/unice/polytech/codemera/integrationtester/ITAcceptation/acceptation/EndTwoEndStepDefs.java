@@ -37,6 +37,7 @@ public class EndTwoEndStepDefs {
     private String drone_service_url = "http://localhost:8083";
     private String drone_mock_url = "http://localhost:8084";
     private List<Long> currentOrderIds = new ArrayList<>();
+    private List<Long> deliveringDronesIds = new ArrayList<>();
 
     @Given("All Server Started")
     public void allServerStarted() {
@@ -125,8 +126,14 @@ public class EndTwoEndStepDefs {
         restTemplate = new RestTemplate();
         ResponseEntity<JsonNode> commands = restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/commands", JsonNode.class);
         JsonNode json = commands.getBody();
+        for (JsonNode node :
+                json) {
+            if (node.get("type").toString().equals("DELIVERY") && this.currentOrderIds.contains(node.get("delivery").get("id").asLong())) {
+                this.deliveringDronesIds.add(node.get("target").get("droneID").asLong());
+            }
+        }
         List<JsonNode> delivery_commands_id = json.findValues("orderId");
-        //  25/10/2019 Uncomment for commit
+        // TODO: 25/10/2019 Uncomment for commit
         assertTrue(delivery_commands_id.stream().map(n -> n.asLong(-1)).filter(l -> this.currentOrderIds.contains(l)).count() == 2);
         System.out.println(commands);
     }
@@ -183,9 +190,18 @@ public class EndTwoEndStepDefs {
     }
 
     @Then("The drone for order {int} receives a called home command")
-    public void theDroneForOrderReceivesACalledHomeCommand(int arg0) {
-        //        fail("Should check the mock service for called home command");
+    public void theDroneForOrderReceivesACalledHomeCommand(int order_index) {
+        ResponseEntity<JsonNode> commands = restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/commands", JsonNode.class);
+        JsonNode json = commands.getBody();
 
+        boolean command_received = false;
+        for (JsonNode node :
+                json) {
+            if (node.get("type").toString().equals("CALLBACK") && this.deliveringDronesIds.contains(node.get("target").get("droneID").asLong())) {
+                command_received = true;
+            }
+        }
+        assertTrue("A Callback command for the delivering drone should be found", command_received);
     }
 
     @When("Elena brings the drone for order {int} back in the active fleet")
