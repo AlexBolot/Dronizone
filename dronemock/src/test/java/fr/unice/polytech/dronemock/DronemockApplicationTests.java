@@ -1,5 +1,6 @@
 package fr.unice.polytech.dronemock;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.dronemock.models.Delivery;
 import fr.unice.polytech.dronemock.models.Location;
@@ -21,9 +22,13 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @RunWith(SpringRunner.class)
@@ -43,6 +48,7 @@ public class DronemockApplicationTests {
     private MockMvc mockMvc;
 
     private static String RECEIVER_TOPIC = "drones-commands";
+
 
     @BeforeClass
     public static void beforeAll() {
@@ -90,26 +96,30 @@ public class DronemockApplicationTests {
 
     @Test
     public void initCommandTest() throws Exception {
-        String event = "{\"type\":\"INITIALISATION\", \"assignedId\":\"5\"}";
+        String event = "{\"type\":\"INITIALISATION\",\"target\":{\"droneID\":-10 } ,\"assignedId\":\"5\"}";
+
         this.kafkaTemplate.sendDefault(event);
         Thread.sleep(1000);
-        MvcResult a = mockMvc.perform(get("/commands/debug/id")
+        MvcResult a = mockMvc.perform(get("/commands/debug/drones")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .accept(MediaType.APPLICATION_JSON_UTF8))
                 .andReturn();
-        long id = Long.parseLong(a.getResponse().getContentAsString());
-        assertEquals(5, id);
+        List<Long> drones = Arrays.asList(new ObjectMapper().readValue(a.getResponse().getContentAsString(), JsonNode[].class))
+                .stream().map(n -> n.get("droneID").asLong()).collect(Collectors.toList());
+        assertTrue(drones.contains(5L));
     }
 
 
     @Test
     public void deliveryCommandTest() throws Exception {
+        long droneid = initializeDrone();
         Delivery delivery = new Delivery(5, 5, 5, new Location(7, 7), new Location(8, 8), true);
         String jsonDelivery = new ObjectMapper().writeValueAsString(delivery);
-        String event = "{\"type\":\"DELIVERY\", \"delivery\":" + jsonDelivery + "}";
+
+        String event = "{\"type\":\"DELIVERY\",\"target\":{\"droneID\":" + String.valueOf(droneid) + " },\"delivery\":" + jsonDelivery + "}";
         this.kafkaTemplate.sendDefault(event);
         Thread.sleep(1000);
-        MvcResult a = mockMvc.perform(get("/commands/debug/delivery")
+        MvcResult a = mockMvc.perform(get("/commands/debug/" + droneid + "/delivery")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .accept(MediaType.APPLICATION_JSON_UTF8))
                 .andReturn();
@@ -117,14 +127,25 @@ public class DronemockApplicationTests {
         assertEquals(delivery, received);
     }
 
+    private long initializeDrone() throws InterruptedException {
+        String event = "{\"type\":\"INITIALISATION\",\"target\":{\"droneID\":-10 }, \"assignedId\":\"5\"}";
+        this.kafkaTemplate.sendDefault(event);
+        Thread.sleep(1000);
+        return 5;
+    }
+
 
     @Test
     public void callbackCommandTest() throws Exception {
+        long droneid = initializeDrone();
+
         Location base = new Location(5, 5);
         String jsonBase = new ObjectMapper().writeValueAsString(base);
-        String event = "{\"type\":\"CALLBACK\", \"baseLocation\":" + jsonBase + "}";
+
+        String event = "{\"type\":\"CALLBACK\",\"target\":{\"droneID\":" + String.valueOf(droneid) + " }, \"baseLocation\":" + jsonBase + "}";
         this.kafkaTemplate.sendDefault(event);
-        MvcResult a = mockMvc.perform(get("/commands/debug/base")
+        Thread.sleep(1000);
+        MvcResult a = mockMvc.perform(get("/commands/debug/" + droneid + "/base")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .accept(MediaType.APPLICATION_JSON_UTF8))
                 .andReturn();
