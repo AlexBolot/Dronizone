@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.unice.polytech.codemera.watchdog.entities.Order;
 import fr.unice.polytech.codemera.watchdog.entities.Order.OrderStatus;
-import fr.unice.polytech.codemera.watchdog.repositories.OrderRepository;
+import fr.unice.polytech.codemera.watchdog.repositories.OrderRepo;
 import org.springframework.core.env.Environment;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,8 +14,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.time.LocalDateTime.now;
 
@@ -23,60 +23,62 @@ import static java.time.LocalDateTime.now;
 @RequestMapping(path = "/watchdog", produces = "application/json")
 public class WatchDogController {
 
-    private static final String NOTIFY_URL = "http://localhost:8080";
     private static final String NOTIFY_PATH = "/notification/alert/";
 
-    private OrderRepository orderRepository;
+    private OrderRepo orderRepo;
     private Environment env;
 
-    public WatchDogController(OrderRepository orderRepository, Environment env) {
-        this.orderRepository = orderRepository;
+    public WatchDogController(OrderRepo orderRepo, Environment env) {
+        this.orderRepo = orderRepo;
         this.env = env;
     }
 
-    @KafkaListener(topics = "orders")
+    @KafkaListener(topics = "order-create")
     public void order_listener(String message) throws IOException {
 
         ObjectNode json = new ObjectMapper().readValue(message, ObjectNode.class);
 
-        int order_id = json.get("order_id").asInt();
+        int orderId = json.get("order_id").asInt();
+        long timestamp = json.get("timestamp").asLong();
         OrderStatus status = OrderStatus.valueOf(json.get("orderStatus").asText());
         JsonNode payload = json.get("payload");
 
-        int customer_id = payload.get("customer_id").asInt();
+        int customerId = payload.get("customer_id").asInt();
 
-        Order order = new Order(order_id, customer_id, status, System.currentTimeMillis());
+        Order order = new Order(orderId, customerId, status, timestamp);
         handleNewOrder(order);
     }
 
 
     private void handleNewOrder(Order order) {
-        Iterator<Order> orders = orderRepository.findAllByCustomer_id(order.getCustomer_id()).iterator();
+        System.out.println("BLOB####");
+        orderRepo.save(order);
+        String notifyURL = env.getProperty("NOTIFY_HOST");
+        int customerId = order.getCustomerId();
 
-        List<Order> recent = new ArrayList<>();
-        List<Order> old = new ArrayList<>();
+        long thresholdTimestamp = Timestamp.valueOf(now().minusMinutes(1)).getTime();
 
-        while (orders.hasNext()) {
-            Order next = orders.next();
-            LocalDateTime time = new Timestamp(next.getTimestamp()).toLocalDateTime();
+        long count = orderRepo.countAllByCustomerIdAndTimestampIsAfter(customerId, thresholdTimestamp);
 
-            if (time.isBefore(now().minusMinutes(1))) old.add(next);
-            else recent.add(next);
+        System.out.println("count ---- "+ count);
 
-            if (old.size() >= 20) {
-                Map<String, String> params = new HashMap<>();
-                params.put("target_id", String.valueOf(order.getCustomer_id()));
-                params.put("order_id", String.valueOf(order.getOrder_id()));
-                params.put("payload", "I detected a strange customer behavior !!");
+        if (count >= 20) {
+            Map<String, String> params = new HashMap<>();
+            params.put("target_id", String.valueOf(order.getCustomerId()));
+            params.put("order_id", String.valueOf(order.getOrderId()));
+            params.put("payload", "I detected a strange customer behavior !!");
 
-                String notifyUrl = env.getProperty("NOTIFY_HOST");
-                if (notifyUrl == null) notifyUrl = NOTIFY_URL;
+            String notifyUrl = env.getProperty("NOTIFY_HOST");
+            if (notifyUrl == null) notifyUrl = notifyURL;
 
-                RestTemplate restTemplate = new RestTemplate();
-                restTemplate.postForObject(notifyUrl + NOTIFY_PATH, params, String.class);
-            }
-
-            recent.forEach(orderRepository::delete);
+            RestTemplate restTemplate = new RestTemplate();
+            restTemplate.postForObject(notifyUrl + NOTIFY_PATH, params, String.class);
         }
+
+        Iterable<Order> oldOrders = orderRepo.findAllByCustomerIdAndTimestampIsBefore(customerId, thresholdTimestamp);
+        oldOrders.forEach(o -> {
+            orderRepo.delete(o);
+            System.out.println("[REMOVE] -> " + o);
+        });
     }
 }
