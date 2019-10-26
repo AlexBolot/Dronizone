@@ -32,7 +32,7 @@ Feature: DroneUpdating
   Scenario: A new drone is automatically registered
     Given An empty fleet
     And mocked drone publishers
-    And mocked drone listener
+#    And mocked drone listener
     When A new drone sends a state update
     And A pause of 1 seconds
     Then The drone is added in the database

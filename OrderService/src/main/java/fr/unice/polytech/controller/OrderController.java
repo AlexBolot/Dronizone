@@ -42,6 +42,11 @@ public class OrderController {
     @Autowired
     private Environment env;
 
+    @GetMapping("/**")
+    public String debug() {
+        return "OK";
+    }
+
     @KafkaListener(topics = "order-delivered", groupId = "order-service")
     public void listenForDelivered(String content) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);

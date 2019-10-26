@@ -22,4 +22,6 @@ public class Drone {
     public boolean is(DroneStatus status) {
         return droneStatus == status;
     }
+
+    private double distanceToPickup = 0;
 }

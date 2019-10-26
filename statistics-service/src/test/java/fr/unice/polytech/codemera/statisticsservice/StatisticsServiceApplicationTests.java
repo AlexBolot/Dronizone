@@ -12,28 +12,28 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import static junit.framework.TestCase.assertTrue;
 
-@ActiveProfiles("test")
-@RunWith(SpringRunner.class)
-@SpringBootTest
-@AutoConfigureMockMvc
+//@ActiveProfiles("test")
+//@RunWith(SpringRunner.class)
+//@SpringBootTest
+//@AutoConfigureMockMvc
 public class StatisticsServiceApplicationTests {
-
-    @Test
-    public void contextLoads() {
-        assertTrue(true);
-    }
-
-    @ClassRule
-    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "orders");
-
-    @BeforeClass
-    public static void beforeAll() {
-        System.out.println("broker in the cucumber runner " + rule.getEmbeddedKafka().getBrokersAsString());
-        System.setProperty("spring.kafka.bootstrap-servers",
-                rule.getEmbeddedKafka().getBrokersAsString());
-
-    }
-
-
+//
+//    @Test
+//    public void contextLoads() {
+//        assertTrue(true);
+//    }
+//
+//    @ClassRule
+//    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "orders");
+//
+//    @BeforeClass
+//    public static void beforeAll() {
+//        System.out.println("broker in the cucumber runner " + rule.getEmbeddedKafka().getBrokersAsString());
+//        System.setProperty("spring.kafka.bootstrap-servers",
+//                rule.getEmbeddedKafka().getBrokersAsString());
+//
+//    }
+//
+//
 
 }

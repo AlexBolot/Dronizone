@@ -28,8 +28,10 @@ public class DroneMockController {
     private static final String INIT_TYPE = "INITIALISATION";
     private static final String DELIVERY_TYPE = "DELIVERY";
     private static final String CALLBACK_TYPE = "CALLBACK";
+
     @Autowired
     private Environment env;
+
     @Autowired
     private KafkaTemplate kafkaTemplate;
 
@@ -152,14 +154,14 @@ public class DroneMockController {
                         this.targets.put(drone, delivery.getTarget_location());
                         // TODO send start delivery to Drone service
                         PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId());
-                        this.kafkaTemplate.send("drones-pickups", new ObjectMapper().writeValueAsString(p));
+                        this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
                     } else {
                         PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId());
                         drone.setDroneStatus(DroneStatus.ASIDE);
                         this.deliveries.remove(drone);
                         this.targets.remove(drone);
                         // TODO send delivery finish to Drone service
-                        this.kafkaTemplate.send("drones-deliveries", new ObjectMapper().writeValueAsString(p));
+                        this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
                     }
                 } else {
                     moveDrone(location, this.targets.get(drone));
@@ -188,7 +190,7 @@ public class DroneMockController {
         }
     }
 
-    @KafkaListener(topics = "drones-commands")
+    @KafkaListener(topics = "drone-commands")
     public void receivedCommand(String message) {
         HashMap<String, Consumer<JsonNode>> commandTreatments = new HashMap<>();
         commandTreatments.put(INIT_TYPE, this::handleInitialisation);
