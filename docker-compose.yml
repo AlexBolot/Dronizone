@@ -123,6 +123,10 @@ services:
       POSTGRES_DB: dronazone
     networks:
       - dronazone-network
+    expose:
+      - 9000
+    ports:
+      - 9000:5432
   postgres-warehouse:
     container_name: postgres-dronazone-warehouse
     image: postgres
@@ -141,9 +145,9 @@ services:
       POSTGRES_USER: dronazone
       POSTGRES_DB: dronazone
     expose:
-      - 9000
+      - 9001
     ports:
-      - 9000:5432
+      - 9001:5432
     networks:
       - dronazone-network
 

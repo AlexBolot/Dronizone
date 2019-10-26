@@ -34,12 +34,7 @@ public class OrderController {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
     private static final String NOTIFY_URL = "http://localhost:8080";
-    private static final String NOTIFY_PATH = "/notification/customer/";
-
-    private final KafkaTemplate kafkaTemplate;
-
-    @Autowired
-    private ItemRepo itemRepo;
+    private static final String NOTIFY_PATH = "/notifications/customer/";
 
     @Autowired
     private OrderRepo orderRepo;
@@ -47,98 +42,44 @@ public class OrderController {
     @Autowired
     private Environment env;
 
-    public OrderController(KafkaTemplate kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-    }
-
-    @GetMapping("/{hello}")
-    public String order_ping(@PathVariable("hello") String hello) {
-        return hello.equals("hello") ? "World" : "Hello";
-    }
-
-    @GetMapping("/delivery/{order_id}")
-    public String notifyDelivery(@PathVariable("order_id") int orderId) {
-        Optional<Order> opt = orderRepo.findById(orderId);
-
-        if (!opt.isPresent()) return "KO";
-
-        Order order = opt.get();
-        Customer customer = order.getCustomer();
-
-        Map<String, String> params = new HashMap<>();
-        params.put("customer_name", customer.getName() + " " + customer.getFirstName());
-        params.put("medium", customer.getMedium().name());
-        params.put("item_name", order.getItem().getName());
-        params.put("payload", "Your delivery will arrive in 10 minutes");
-
-        String notifyUrl = env.getProperty("NOTIFY_HOST");
-        if (notifyUrl == null) notifyUrl = NOTIFY_URL;
-
-
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + customer.getId() + "/order", params, String.class);
-
-        return "OK";
-    }
-
-    @GetMapping("/cancel/{order_id}")
-    public String notifyCancel(@PathVariable("order_id") int orderId) {
-        Optional<Order> opt = orderRepo.findById(orderId);
-
-        if (!opt.isPresent()) return "KO";
-
-        Order order = opt.get();
-        Customer customer = order.getCustomer();
-
-        Map<String, String> params = new HashMap<>();
-        params.put("customer_name", customer.getName() + " " + customer.getFirstName());
-        params.put("medium", customer.getMedium().name());
-        params.put("item_name", order.getItem().getName());
-        params.put("payload", "Your delivery is cancel");
-
-        String notifyUrl = env.getProperty("NOTIFY_HOST");
-        if (notifyUrl == null) notifyUrl = NOTIFY_URL;
-
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(notifyUrl + NOTIFY_PATH + customer.getId() + "/order", params, String.class);
-
-        return "OK";
-    }
-
-    @KafkaListener(topics = "deliveryPostponed", groupId = "order-service")
-    public void listenForPostponed(String content) throws IOException {
+    @KafkaListener(topics = "order-delivered", groupId = "order-service")
+    public void listenForDelivered(String content) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
         int orderId = jsonNode.get("orderId").asInt();
-        notifyCancel(orderId);
+        sendNotification("Your delivery has been delivered", orderId);
     }
 
-    @GetMapping("/kafka")
-    public void kafkaTest() {
-        kafkaTemplate.send("orders", "{\"orderId\":2; \"status\":\"soon\"}");
+    @KafkaListener(topics = "order-soon", groupId = "order-service")
+    public void listenForCancelled(String content) throws IOException {
+        ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
+        int orderId = jsonNode.get("orderId").asInt();
+        sendNotification("Your delivery will arrive in 10 minutes", orderId);
     }
 
-    /**
-     * This struct will maybe change if the data sent here get more complex
-     * {"orderId":x; "status":"soon"}
-     *
-     * @param content
-     */
+    @KafkaListener(topics = "order-cancelled", groupId = "order-service")
+    public void listenForSoon(String content) throws IOException {
+        ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
+        int orderId = jsonNode.get("orderId").asInt();
+        sendNotification("Your delivery is cancel", orderId);
+    }
 
-    @KafkaListener(topics = "orders")
-    public void checkIfClose(String content) {
-        Gson gson = new Gson();
-        OrderStatusMessage osm = gson.fromJson(content, OrderStatusMessage.class);
-        int orderId = osm.getOrder_id();
-        String status = osm.getStatus();
+    private void sendNotification(String payload, int orderId) {
         Optional<Order> opt = orderRepo.findById(orderId);
-        if (!opt.isPresent()) {
-            System.err.println("err");
-        } else {
-            if (status.equals("soon")) {
-                notifyDelivery(orderId);
-                Order order = opt.get();
-                order.setStatus(Status.SOON);
-            }
+        if (opt.isPresent()) {
+            Order order = opt.get();
+            Customer customer = order.getCustomer();
+
+            Map<String, String> params = new HashMap<>();
+            params.put("customer_name", customer.getName() + " " + customer.getFirstName());
+            params.put("medium", customer.getMedium().name());
+            params.put("item_name", order.getItem().getName());
+            params.put("payload", payload);
+
+            String notifyUrl = env.getProperty("NOTIFY_HOST");
+            if (notifyUrl == null) notifyUrl = NOTIFY_URL;
+
+            RestTemplate restTemplate = new RestTemplate();
+            restTemplate.postForObject(notifyUrl + NOTIFY_PATH + customer.getId() + "/order", params, String.class);
         }
     }
 }

@@ -1,5 +1,6 @@
 package fr.unice.polytech.acceptation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.entities.*;
 import fr.unice.polytech.repo.CoordRepo;
@@ -13,22 +14,39 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.Body;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.KafkaMessageListenerContainer;
+import org.springframework.kafka.listener.MessageListener;
+import org.springframework.kafka.listener.MessageListenerContainer;
+import org.springframework.kafka.test.utils.ContainerTestUtils;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 import static fr.unice.polytech.entities.NotificationMedium.valueOf;
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpResponse.response;
@@ -56,6 +74,11 @@ public class OrderStepDefs {
     @Autowired
     private MockMvc mockMvc;
 
+    private KafkaTemplate kafkaTemplate;
+
+    @Autowired
+    private KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
+
     private MvcResult last_query;
 
     private MockServerClient mockServer;
@@ -75,26 +98,17 @@ public class OrderStepDefs {
     private RequestBuilder requestBuilder;
     private MvcResult result;
 
-    private JsonElement jsonElement;
+    private KafkaMessageListenerContainer<String, String> warehouseContainer;
+    private BlockingQueue<ConsumerRecord<String, String>> warehouseRecords;
 
-    /**
-     * JSON helper method
-     *
-     * @param obj Object to parse as a Json String
-     * @return The json string obtained
-     */
-    public static String asJsonString(final Object obj) {
-        try {
-            return new ObjectMapper().writeValueAsString(obj);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private JsonElement jsonElement;
 
     @And("The mock server is teared down")
     public void theMockServerIsTearedDown() {
         if (this.clientServer != null) this.clientServer.stop();
         this.mockServer = null;
+        if (warehouseContainer != null) warehouseContainer.stop();
+        if (warehouseRecords != null) warehouseRecords.clear();
     }
 
     @Given("^An Item and the client information$")
@@ -110,15 +124,29 @@ public class OrderStepDefs {
 
     @Then("^The client will receive the order as confirmation$")
     public void passOrder() throws Exception {
-        int serverPort = 20000;
-        clientServer = startClientAndServer(serverPort);
-        mockServer = new MockServerClient("localhost", serverPort);
-
-        System.setProperty("WAREHOUSE_HOST", "http://localhost:20000");
-
-        request = new HttpRequest();
-        request.withMethod("POST").withPath("/warehouse/orders");
-        mockServer.when(request).respond(response().withStatusCode(200));
+        Map<String, Object> consumerProperties =
+                KafkaTestUtils.consumerProps(System.getProperty("spring.kafka.bootstrap-servers"),
+                        "test", "false");
+        // create a Kafka consumer factory
+        DefaultKafkaConsumerFactory<String, String> consumerFactory =
+                new DefaultKafkaConsumerFactory<>(
+                        consumerProperties);
+        // set the topic that needs to be consumed
+        ContainerProperties containerProperties = new ContainerProperties("order-create");
+        if (this.warehouseContainer != null) {
+            this.warehouseContainer.stop();
+        }
+        // create a Kafka MessageListenerContainer
+        this.warehouseContainer = new KafkaMessageListenerContainer<>(consumerFactory,
+                containerProperties);
+        // create a thread safe queue to store the received message
+        warehouseRecords = new LinkedBlockingQueue<>();
+        // setup a Kafka message listener
+        this.warehouseContainer.setupMessageListener((MessageListener<String, String>) record -> warehouseRecords.add(record));
+        // start the container and underlying message listener
+        this.warehouseContainer.start();
+        // wait until the container has the required number of assigned partitions
+        ContainerTestUtils.waitForAssignment(this.warehouseContainer, 2);
 
         JsonParser parser = new JsonParser();
 
@@ -159,19 +187,18 @@ public class OrderStepDefs {
     }
 
     @And("^The Warehouse service will receive the order$")
-    public void warehouseConfirmation() throws Exception {
-        mockMvc.perform(post("/order")
-                .content(jsonElement.toString())
-                .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .accept(MediaType.APPLICATION_JSON_UTF8))
-                .andReturn();
-        mockServer.verify(request, VerificationTimes.atLeast(2));
-        mockServer.close();
-        clientServer.close();
+    public void warehouseConfirmation() {
+        List<ConsumerRecord<String, String>> received = new ArrayList<>();
+        warehouseRecords.drainTo(received);
+        List<String> actual = received.stream().map(ConsumerRecord::value).collect(Collectors.toList());
+
+        assertEquals(1, actual.size());
+        warehouseContainer.stop();
+        warehouseRecords.clear();
     }
 
     @Given("^A drone with a client delivery$")
-    public void setNotificationMock() {
+    public void setNotificationMock() throws JsonProcessingException, InterruptedException {
         item = new Item("Persona 5");
         itemRepo.save(item);
         customer = new Customer("Roger", "Regor");
@@ -181,14 +208,43 @@ public class OrderStepDefs {
         order = new Order(coord, item, Status.PENDING, customer, "Bla bla bla");
         orderRepo.save(order);
 
+        request = new HttpRequest();
+
+        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
         int serverPort = 20000;
         clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
+        mockServer.when(request).respond(response().withStatusCode(200));
         System.setProperty("NOTIFY_HOST", "http://localhost:20000");
 
-        request = new HttpRequest();
-        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
-        mockServer.when(request).respond(response().withStatusCode(200));
+        // set up the Kafka producer properties
+        Map<String, Object> senderProperties =
+                KafkaTestUtils.senderProps(System.getProperty("spring.kafka.bootstrap-servers"));
+
+        // create a Kafka producer factory
+        ProducerFactory<String, String> producerFactory =
+                new DefaultKafkaProducerFactory<>(
+                        senderProperties);
+
+        // create a Kafka template
+        kafkaTemplate = new KafkaTemplate<>(producerFactory);
+        // set the default topic to send to
+        kafkaTemplate.setDefaultTopic("order-soon");
+        // wait until the partitions are assigned
+        for (MessageListenerContainer messageListenerContainer : kafkaListenerEndpointRegistry
+                .getListenerContainers()) {
+            ContainerTestUtils.waitForAssignment(messageListenerContainer,
+                    Integer.parseInt(System.getProperty("spring.kafka.partitions-per-topics")));
+        }
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("orderId", order.getId());
+
+        kafkaTemplate.send("order-soon", new ObjectMapper().writeValueAsString(params));
+
+        Thread.sleep(10000);
+
+        mockServer.verify(request, VerificationTimes.atLeast(1));
     }
 
     @When("^The drone is near his delivery location$")
@@ -221,22 +277,40 @@ public class OrderStepDefs {
         order = new Order(coord, item, Status.PENDING, customer, "Bla bla bla");
         orderRepo.save(order);
 
-        int serverPort = 20000;
-        clientServer = startClientAndServer(serverPort);
-        mockServer = new MockServerClient("localhost", serverPort);
-        System.setProperty("NOTIFY_HOST", "http://localhost:20000");
+        // set up the Kafka producer properties
+        Map<String, Object> senderProperties =
+                KafkaTestUtils.senderProps(System.getProperty("spring.kafka.bootstrap-servers"));
+
+        // create a Kafka producer factory
+        ProducerFactory<String, String> producerFactory =
+                new DefaultKafkaProducerFactory<>(
+                        senderProperties);
+
+        // create a Kafka template
+        kafkaTemplate = new KafkaTemplate<>(producerFactory);
+        // set the default topic to send to
+        kafkaTemplate.setDefaultTopic("order-cancelled");
+        // wait until the partitions are assigned
+        for (MessageListenerContainer messageListenerContainer : kafkaListenerEndpointRegistry
+                .getListenerContainers()) {
+            ContainerTestUtils.waitForAssignment(messageListenerContainer,
+                    Integer.parseInt(System.getProperty("spring.kafka.partitions-per-topics")));
+        }
 
         request = new HttpRequest();
         request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
+        int serverPort = 20000;
+        clientServer = startClientAndServer(serverPort);
+        mockServer = new MockServerClient("localhost", serverPort);
         mockServer.when(request).respond(response().withStatusCode(200));
+        System.setProperty("NOTIFY_HOST", "http://localhost:20000");
     }
 
     @When("^Drone is cancel by fleet manager$")
     public void setCancelRequest() throws Exception {
-        requestBuilder = get("/order/notify/cancel/" + order.getId())
-                .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .accept(MediaType.APPLICATION_JSON_UTF8);
-        result = mockMvc.perform(requestBuilder).andReturn();
+        Map<String, Object> params = new HashMap<>();
+        params.put("orderId", order.getId());
+        this.kafkaTemplate.send("order-cancelled", new ObjectMapper().writeValueAsString(params));
     }
 
     @Then("^A notification is send to client$")
@@ -258,16 +332,6 @@ public class OrderStepDefs {
 
     @When("The customer asks to be notified by {string}")
     public void theCustomerAsksToBeNotifiedByMedium(String mediumName) throws Exception {
-        int serverPort = 20000;
-
-        clientServer = startClientAndServer(serverPort);
-        mockServer = new MockServerClient("localhost", serverPort);
-
-        request = new HttpRequest();
-        request.withMethod("POST").withPath("/warehouse/orders");
-        mockServer.when(request)
-                .respond(response().withStatusCode(200));
-
         JsonParser parser = new JsonParser();
         jsonElement = parser.parse("{\"id\": \"1\",\"jsonrpc\": \"2.0\",\"method\": \"setPersonalPreferences\"}");
 
@@ -300,16 +364,6 @@ public class OrderStepDefs {
 
     @When("Roger provides his identity")
     public void rogerProvidesHisIdentity() throws Exception {
-        int serverPort = 20000;
-
-        clientServer = startClientAndServer(serverPort);
-        mockServer = new MockServerClient("localhost", serverPort);
-
-        request = new HttpRequest();
-        request.withMethod("POST").withPath("/warehouse/orders");
-        mockServer.when(request)
-                .respond(response().withStatusCode(200));
-
         JsonParser parser = new JsonParser();
         jsonElement = parser.parse("{\"id\": \"1\",\"jsonrpc\": \"2.0\",\"method\": \"registerCustomer\"}");
 

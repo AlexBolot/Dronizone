@@ -48,12 +48,6 @@ class IntegrationContext {
     KafkaMessageListenerContainer<String, String> orderContainer;
     KafkaMessageListenerContainer<String, String> droneContainer;
 
-    BlockingQueue<ConsumerRecord<String, String>> orderRecords;
-    BlockingQueue<ConsumerRecord<String, String>> droneRecords;
-
-    static String ORDER_TOPIC = "orders";
-    static String DRONE_TOPIC = "drones-commands";
-
 
 
 

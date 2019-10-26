@@ -99,6 +99,7 @@ public class DroneController {
     public Iterable<Delivery> deliveries() {
         return deliveryRepository.findAll();
     }
+
     @GetMapping(path = "/drones")
     public Iterable<Drone> getDrones() {
         return droneRepository.findAll();
@@ -179,8 +180,6 @@ public class DroneController {
             e.printStackTrace();
             logger.error(e.toString());
         }
-
-
     }
 
     @KafkaListener(topics = "drone-delivery-update")
