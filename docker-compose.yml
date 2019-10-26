@@ -128,6 +128,10 @@ services:
       POSTGRES_DB: dronazone
     networks:
       - dronazone-network
+#    expose:
+#      - 9000
+#    ports:
+#      - 9000:5432
   postgres-warehouse:
     container_name: postgres-dronazone-warehouse
     image: postgres
@@ -145,6 +149,10 @@ services:
       POSTGRES_PASSWORD: dronazone
       POSTGRES_USER: dronazone
       POSTGRES_DB: dronazone
+#    expose:
+#      - 9001
+#    ports:
+#      - 9001:5432
     networks:
       - dronazone-network
 
@@ -216,9 +224,7 @@ services:
       #      KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "drones:1:1,delivery:1:1,drones-commands:1:1,drones-pickup:1:1,drones-deliveries:1:1"
-    networks:
-      - dronazone-network
+      KAFKA_CREATE_TOPICS: "drone-status:1:1,drone-commands:1:1,drone-deliveriy-update:1:1,order-create:1:1,order-delivered:1:1,order-cancelled:1:1,order-soon:1:1,order-packed:1:1"
 
 
   telegraf:

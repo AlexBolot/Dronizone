@@ -1,49 +1,50 @@
 package fr.unice.polytech.codemara.drone.order_service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.entities.Delivery;
+import fr.unice.polytech.codemara.drone.entities.dto.OrderStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 public class OrderService {
 
-    private Environment env;
-    private final KafkaTemplate kafkaTemplate;
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
-    public OrderService(Environment env, KafkaTemplate kafkaTemplate) {
-        this.env = env;
-        this.kafkaTemplate = kafkaTemplate;
+    @Autowired
+    private KafkaTemplate kafkaTemplate;
+
+    public void notifyDeliveryCancel(Delivery delivery) {
+        logger.info("Delivery was cancel : " + delivery);
+        sendNotification(delivery, "order-cancelled", OrderStatus.CANCEL);
     }
 
-    public void cancel(Delivery delivery) {
+    public void notifyDeliverySoon(Delivery delivery) {
+        logger.info("Delivery will arrived soon : " + delivery);
+        sendNotification(delivery, "order-soon", OrderStatus.SOON);
+    }
+
+    public void notifyDeliveryFinish(Delivery delivery) {
+        logger.info("Delivery is finish : " + delivery);
+        sendNotification(delivery, "order-delivered", OrderStatus.DELIVERED);
+    }
+
+    private void sendNotification(Delivery delivery, String topic, OrderStatus status) {
         try {
-            URL url = UriComponentsBuilder.fromUriString(env.getProperty("ORDER_SERVICE_HOST") + "/order/notify/cancel/" + delivery.getOrderId())
-                    .build().toUri().toURL();
-            RestTemplate restTemplate = new RestTemplate();
-            restTemplate.getForEntity(url.toString(), String.class);
-        } catch (MalformedURLException e) {
-            logger.error(e.toString());
-        }
-
-    }
-
-    public void notifyDelivery(Delivery delivery) {
-     /*   try {
-            URL url = UriComponentsBuilder.fromUriString(env.getProperty("ORDER_SERVICE_HOST")+"/order/notify/delivery/"+delivery.getOrderId())
-                    .build().toUri().toURL();
-            RestTemplate restTemplate = new RestTemplate();
-            restTemplate.getForEntity(url.toString(), String.class);
-        } catch (MalformedURLException e) {
+            long orderId = delivery.getOrderId();
+            Map<String, Object> params = new HashMap<>();
+            params.put("orderId", orderId);
+            params.put("deliveryLocation", delivery.getTarget_location());
+            params.put("status", status.toString());
+            params.put("timestamp", System.currentTimeMillis());
+            kafkaTemplate.send(topic, new ObjectMapper().writeValueAsString(params));
+        } catch (JsonProcessingException e) {
             e.printStackTrace();
-        }*/
-        long orderId = delivery.getOrderId();
-        kafkaTemplate.send("orders", "{\"orderId\":" + orderId + "\"status\":\"soon\"}");
+        }
     }
 }

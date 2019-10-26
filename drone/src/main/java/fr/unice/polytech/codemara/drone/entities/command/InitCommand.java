@@ -7,7 +7,7 @@ public class InitCommand extends DroneCommand {
     public final long assignedId;
 
     public InitCommand(Drone target, long newId) {
-        super(CommandType.INITIALISATION, target);
+        super(CommandType.INITIALISATION, target, newId);
         this.assignedId = newId;
     }
 }

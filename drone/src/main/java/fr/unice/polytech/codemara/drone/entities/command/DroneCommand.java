@@ -18,6 +18,8 @@ public class DroneCommand {
 
     private Drone target;
 
+    private Object payload;
+
     /**
      * constructor for child purposes, should not be used
      */
@@ -28,6 +30,7 @@ public class DroneCommand {
     public DroneCommand copyWith(Drone target) {
         DroneCommand copy = new DroneCommand(this.type);
         copy.target = target;
+        copy.payload = payload;
         return copy;
     }
 }

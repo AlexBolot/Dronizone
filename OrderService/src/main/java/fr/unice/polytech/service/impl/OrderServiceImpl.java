@@ -1,10 +1,9 @@
 package fr.unice.polytech.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceImpl;
-import fr.unice.polytech.entities.Customer;
-import fr.unice.polytech.entities.NotificationMedium;
-import fr.unice.polytech.entities.Order;
-import fr.unice.polytech.entities.Status;
+import fr.unice.polytech.entities.*;
 import fr.unice.polytech.repo.CoordRepo;
 import fr.unice.polytech.repo.CustomerRepo;
 import fr.unice.polytech.repo.ItemRepo;
@@ -12,6 +11,7 @@ import fr.unice.polytech.repo.OrderRepo;
 import fr.unice.polytech.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -44,6 +44,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private Environment env;
 
+    @Autowired
+    private KafkaTemplate kafkaTemplate;
+
     @Override
     public Order orderItem(Order order) {
         order.setStatus(Status.PENDING);
@@ -57,37 +60,23 @@ public class OrderServiceImpl implements OrderService {
         if (warehouseUrl == null) warehouseUrl = WAREHOUSE_URL;
 
 
-        Map<String, String> params = new HashMap<>();
-        params.put("order_id", order.getId().toString());
-        params.put("item_id", order.getItem().getId().toString());
-        params.put("lat", order.getCoord().getLat());
-        params.put("lon", order.getCoord().getLon());
-        params.put("customer_id", order.getCustomer().getId().toString());
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForObject(warehouseUrl + WAREHOUSE_PATH, params, String.class);
+        Map<String, Object> params = new HashMap<>();
+        params.put("orderId", order.getId().toString());
+        params.put("itemId", order.getItem().getId().toString());
+        params.put("customerId", order.getCustomer().getId().toString());
 
-//        restTemplate.postForObject(WAREHOUSE_URL, order, String.class);
+        Map<String, Object> location = new HashMap<>();
+        location.put("latitude", order.getCoord().getLat());
+        location.put("longitude", order.getCoord().getLon());
 
+        params.put("deliveryLocation", location);
 
-//        StringBuilder stringBuilder = new StringBuilder("{");
-//        stringBuilder.append("\"order_id\":\"").append(order.getId()).append("\",");
-//        stringBuilder.append("\"item_id\":\"").append(order.getItem()).append("\",");
-//        stringBuilder.append("\"lat\":\"").append(order.getCoord().getLat()).append("\",");
-//        stringBuilder.append("\"lon\":\"").append(order.getCoord().getLon()).append("\",");
-//        stringBuilder.append("\"customer_id\":\"").append(order.getCustomer().getId()).append("\"}");
-//
-//        try {
-//            HttpURLConnection conn = (HttpURLConnection) new URL(warehouseUrl + WAREHOUSE_PATH).openConnection();
-//            conn.setDoOutput(true);
-//            conn.setRequestProperty("Content-Type", "application/json");
-//            conn.setRequestMethod("POST");
-//
-//            try (OutputStream out = conn.getOutputStream()) {
-//                out.write(stringBuilder.toString().getBytes());
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        try {
+            kafkaTemplate.send("order-create", new ObjectMapper().writeValueAsString(params));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
         return order;
     }
 
