@@ -1,0 +1,21 @@
+{
+  "id": "1",
+  "jsonrpc": "2.0",
+  "method": "orderItem",
+  "params": {
+    "order": {
+      "item": {
+        "name": "Persona 5"
+      },
+      "coord": {
+        "lon": "0",
+        "lat": "0"
+      },
+      "customer": {
+        "name": "Roger",
+        "firstName": "Regor"
+      },
+      "paymentInfo": "Bla bla"
+    }
+  }
+}
