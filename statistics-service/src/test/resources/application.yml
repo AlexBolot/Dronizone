@@ -1,0 +1,7 @@
+spring:
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    topic:
+      orders: orders
+    consumer:
+      group-id: test

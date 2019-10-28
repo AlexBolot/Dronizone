@@ -2,11 +2,14 @@ package fr.unice.polytech.codemara.drone.acceptation;
 
 import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.Drone;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * This should serve as singleton context for acceptation tests
@@ -25,11 +28,15 @@ class IntegrationContext {
      * To send kafka message, carefull, drone status step defs should be in the matching stepdef file
      */
     KafkaTemplate<String, String> kafkaTemplate;
+    /**
+     * To listen to kafka message, carefull drone status step defs should be in the matching stepdef
+     */
+    KafkaMessageListenerContainer<String, String> container;
 
     /**
      * The current delivery, for one drone one delivery tests
      */
-     Delivery currentDelivery;
+    Delivery currentDelivery;
 
     /**
      * For one drone operation, freely assign to this drone
@@ -42,11 +49,12 @@ class IntegrationContext {
      */
     List<Drone> currentDroneList;
 
+    KafkaMessageListenerContainer<String, String> orderContainer;
+    KafkaMessageListenerContainer<String, String> droneContainer;
 
 
-
-    static IntegrationContext getInstance(){
-        if(instance == null){
+    static IntegrationContext getInstance() {
+        if (instance == null) {
             instance = new IntegrationContext();
         }
         return instance;

@@ -1,6 +1,7 @@
 spring:
   datasource:
     url: jdbc:postgresql://${DATASOURCE_HOST}:5432/dronazone
+#    url: jdbc:postgresql://${DATASOURCE_HOST}:9000/dronazone
     username: dronazone
     password: dronazone
   batch:
@@ -9,5 +10,6 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     generate-ddl: true
   kafka:
+    bootstrap-servers: ${KAFKA_HOST}:9092
     consumer:
       group-id: drone-service

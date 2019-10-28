@@ -3,9 +3,10 @@ package fr.unice.polytech.codemera.statisticsservice;
 import org.influxdb.InfluxDB;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.kafka.core.KafkaTemplate;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 public class StatisticsServiceApplication {
 
     private final KafkaTemplate<String, String> kafka;

@@ -12,10 +12,13 @@ import lombok.RequiredArgsConstructor;
 @Data
 @RequiredArgsConstructor
 @AllArgsConstructor
-
 public class DroneCommand {
+
     private final CommandType type;
+
     private Drone target;
+
+    private Object payload;
 
     /**
      * constructor for child purposes, should not be used
@@ -27,6 +30,7 @@ public class DroneCommand {
     public DroneCommand copyWith(Drone target) {
         DroneCommand copy = new DroneCommand(this.type);
         copy.target = target;
+        copy.payload = payload;
         return copy;
     }
 }
