@@ -11,10 +11,13 @@ import javax.persistence.*;
 @Setter
 @Getter
 public class CustomerOrder {
-    private int item_id;
-    private String lat;
-    private String lon;
-    private int customer_id;
+    private int itemId;
+    private int customerId;
+    private Coord deliveryLocation;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private int orderId;
 
     public enum OrderStatus {
         PENDING,
@@ -24,15 +27,11 @@ public class CustomerOrder {
 
     private OrderStatus status;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private int order_id;
-
     public void setStatus(OrderStatus orderStatus) {
         this.status = orderStatus;
     }
 
-    public int getOrder_id() {
-        return this.order_id;
+    public int getOrderId() {
+        return this.orderId;
     }
 }

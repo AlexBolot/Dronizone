@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 public class DroneMockController {
 
     private static final Logger logger = LoggerFactory.getLogger(DroneMockController.class);
+
     private static final String INIT_TYPE = "INITIALISATION";
     private static final String DELIVERY_TYPE = "DELIVERY";
     private static final String CALLBACK_TYPE = "CALLBACK";

@@ -115,6 +115,7 @@ services:
       INFLUX_HOST: http://influxdb:8086
       INFLUX_USERNAME: dronazone
       INFLUX_PWD: dronazone
+      KAFKA_HOST: http://kafka
     depends_on:
       - kafka
       - influxdb
@@ -189,9 +190,9 @@ services:
         JAR_FILE: target/dronemock-0.0.1-SNAPSHOT.jar
     image: dronizone-mock-drone
     expose:
-      - 8080
+      - 8084
     ports:
-      - 8084:8079
+      - 8084:8080
     depends_on:
       - kafka
       - drone-server

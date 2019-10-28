@@ -2,6 +2,7 @@ package fr.unice.polytech.codemara.warehouse.acceptation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.unice.polytech.codemara.warehouse.entities.Coord;
 import fr.unice.polytech.codemara.warehouse.entities.CustomerOrder;
 import fr.unice.polytech.codemara.warehouse.entities.repositories.OrderRepository;
 
@@ -63,10 +64,9 @@ public class WarehouseStepDefs extends SpringCucumberStepDef {
                 new CustomerOrder()
         );
         for (int i = 0; i < orders.size(); i++) {
-            orders.get(i).setItem_id(i);
-            orders.get(i).setCustomer_id(i);
-            orders.get(i).setLat(String.valueOf(i) + "S");
-            orders.get(i).setLon(String.valueOf(i) + "E");
+            orders.get(i).setItemId(i);
+            orders.get(i).setCustomerId(i);
+            orders.get(i).setDeliveryLocation(new Coord(i, i));
             orders.get(i).setStatus(CustomerOrder.OrderStatus.PENDING);
             orderRepository.save(orders.get(i));
         }

@@ -47,7 +47,7 @@ public class EndTwoEndStepDefs {
     }
 
     @When("Roger passes {int} orders")
-    public void rogerPassesOrders(int arg0) {
+    public void rogerPassesOrders(int arg0) throws InterruptedException {
 
         JsonElement first_order = orderQueryJson("Item1");
         restTemplate = new RestTemplate();
@@ -103,7 +103,7 @@ public class EndTwoEndStepDefs {
     }
 
     @Then("He sees the passed orders")
-    public void heSeesThePassedOrders() {
+    public void heSeesThePassedOrders() throws InterruptedException {
         JsonArray json_orders = this.warehouse_orders_json.getAsJsonArray();
         JsonElement first_order = json_orders.get(json_orders.size() - 2);
         JsonElement secondOrder = json_orders.get(json_orders.size() - 1);

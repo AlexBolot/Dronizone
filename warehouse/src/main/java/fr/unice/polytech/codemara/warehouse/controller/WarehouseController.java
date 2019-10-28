@@ -61,8 +61,8 @@ public class WarehouseController {
             orderRepository.save(ready.get());
         }
         try {
-            URL url = new URL(env.getProperty("DRONE_HOST")+"/drone/request_delivery");
-            RestTemplate restTemplate = new RestTemplate();
+//            URL url = new URL(env.getProperty("DRONE_HOST")+"/drone/request_delivery");
+//            RestTemplate restTemplate = new RestTemplate();
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("orderid", "id");
             Map<String,String> position = new HashMap<>();
@@ -70,10 +70,10 @@ public class WarehouseController {
             position.put("longitude",this.warehouse_lon);
             parameters.put("pickup_location",position);
             position = new HashMap<>();
-            position.put("latitude",ready.get().getLat());
-            position.put("longitude",ready.get().getLon());
+            position.put("latitude",ready.get().getDeliveryLocation().getLatitude() + "");
+            position.put("longitude",ready.get().getDeliveryLocation().getLongitude() + "");
             parameters.put("target_location",position);
-            parameters.put("itemId",ready.get().getItem_id());
+            parameters.put("itemId",ready.get().getItemId());
 //            ResponseEntity<String> response
 //                    = restTemplate.postForEntity(url.toString(),parameters, String.class);
 //            System.out.println("response = " + response);
