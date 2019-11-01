@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.dronemock.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,6 +19,9 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static fr.unice.polytech.dronemock.models.DeliveryStatus.DELIVERING;
+import static fr.unice.polytech.dronemock.models.DeliveryStatus.PICKING_UP;
+
 @RestController
 @RequestMapping(path = "/commands", produces = "application/json")
 public class DroneMockController {
@@ -30,10 +32,7 @@ public class DroneMockController {
     private static final String DELIVERY_TYPE = "DELIVERY";
     private static final String CALLBACK_TYPE = "CALLBACK";
 
-    @Autowired
     private Environment env;
-
-    @Autowired
     private KafkaTemplate kafkaTemplate;
 
     private final List<Drone> drones = new ArrayList<>();
@@ -43,7 +42,9 @@ public class DroneMockController {
     private Map<Drone, Boolean> pickups = new HashMap<>();
     private Map<Drone, Location> targets = new HashMap<>();
 
-    public DroneMockController() {
+    public DroneMockController(Environment env, KafkaTemplate kafkaTemplate) {
+        this.env = env;
+        this.kafkaTemplate = kafkaTemplate;
         init();
     }
 
@@ -154,10 +155,10 @@ public class DroneMockController {
                         this.pickups.put(drone, true);
                         this.targets.put(drone, delivery.getTarget_location());
                         // TODO send start delivery to Drone service
-                        PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId());
+                        PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), PICKING_UP);
                         this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
                     } else {
-                        PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId());
+                        PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DELIVERING);
                         drone.setDroneStatus(DroneStatus.ASIDE);
                         this.deliveries.remove(drone);
                         this.targets.remove(drone);

@@ -29,6 +29,16 @@ Feature: DroneUpdating
     Then The OrderService receives 1 delivery notification
     And The mock server is teared down
 
+  Scenario: When the drone is near pickup, we don't notify
+    Given A drone going to pickup
+    And mocked drone publishers
+    And A mocked Order Service
+    And The drone has distance to target of 250m
+    When The drone has distance to target of 100m
+    And The drone has distance to target of 100m
+    Then The OrderService receives 0 delivery notification
+    And The mock server is teared down
+
   Scenario: A new drone is automatically registered
     Given An empty fleet
     And mocked drone publishers

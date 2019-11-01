@@ -23,4 +23,9 @@ public class Delivery {
     @Embedded
     private Location target_location;
     private boolean notified = false;
+    private boolean picked_up = false;
+
+    public boolean mustNotify() {
+        return !notified && picked_up;
+    }
 }

@@ -8,6 +8,6 @@ Feature: Notify Clients when their deliveries update
 
   Scenario: Roger's delivery is cancel
     Given Bad weather forecast
-    When Drone is cancel by fleet manager
+    When Drone is canceled by fleet manager
     Then A notification is send to client
     And The mock server is teared down

@@ -17,7 +17,6 @@ import io.cucumber.java.en.When;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.Body;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +46,8 @@ import java.util.stream.Collectors;
 
 import static fr.unice.polytech.entities.NotificationMedium.valueOf;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpResponse.response;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -210,7 +210,7 @@ public class OrderStepDefs {
 
         request = new HttpRequest();
 
-        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
+        request.withMethod("POST").withPath("/notifications/customer/" + order.getCustomer().getId() + "/order");
         int serverPort = 20000;
         clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
@@ -298,7 +298,7 @@ public class OrderStepDefs {
         }
 
         request = new HttpRequest();
-        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
+        request.withMethod("POST").withPath("/notifications/customer/" + order.getCustomer().getId() + "/order");
         int serverPort = 20000;
         clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
@@ -306,15 +306,16 @@ public class OrderStepDefs {
         System.setProperty("NOTIFY_HOST", "http://localhost:20000");
     }
 
-    @When("^Drone is cancel by fleet manager$")
-    public void setCancelRequest() throws Exception {
+    @When("^Drone is canceled by fleet manager$")
+    public void setCanceledRequest() throws Exception {
         Map<String, Object> params = new HashMap<>();
         params.put("orderId", order.getId());
         this.kafkaTemplate.send("order-cancelled", new ObjectMapper().writeValueAsString(params));
     }
 
     @Then("^A notification is send to client$")
-    public void verifyCancelNotification() {
+    public void verifyCancelNotification() throws InterruptedException {
+        Thread.sleep(10000);
         mockServer.verify(request, VerificationTimes.atLeast(1));
     }
 

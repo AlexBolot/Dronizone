@@ -13,4 +13,6 @@ public class PickupState {
 
     private long itemId;
 
+    private DeliveryStatus deliveryStatus;
+
 }

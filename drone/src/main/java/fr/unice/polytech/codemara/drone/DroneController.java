@@ -6,6 +6,7 @@ import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
 import fr.unice.polytech.codemara.drone.entities.*;
 import fr.unice.polytech.codemara.drone.entities.command.*;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
+import fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryUpdateDTO;
 import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
@@ -152,14 +153,16 @@ public class DroneController {
 
             logger.debug(result.toString());
 
-            if (state.getWhereabouts().getDistanceToTarget() < 200 && result.isPresent() && result.get().getCurrentDelivery() != null && !result.get().getCurrentDelivery().isNotified()) {
-                Delivery delivery = result.get().getCurrentDelivery();
-                orderService.notifyDeliverySoon(delivery);
-                delivery.setNotified(true);
-                deliveryRepository.save(delivery);
-            }
-
             result.ifPresent(drone -> {
+                Delivery delivery = drone.getCurrentDelivery();
+                double distance = state.getWhereabouts().getDistanceToTarget();
+
+                if (distance < 200 && delivery != null && delivery.mustNotify()) {
+                    orderService.notifyDeliverySoon(delivery);
+                    delivery.setNotified(true);
+                    deliveryRepository.save(delivery);
+                }
+
                 if (drone.getDroneStatus() != state.getDroneStatus()) {
                     drone.setDroneStatus(state.getDroneStatus());
                     droneRepository.save(drone);
@@ -187,6 +190,12 @@ public class DroneController {
         logger.info("Drones has pickup delivery : " + message);
         try {
             DeliveryUpdateDTO deliveryUpdate = new ObjectMapper().readValue(message, DeliveryUpdateDTO.class);
+            Optional<Drone> result = droneRepository.findById(deliveryUpdate.getDroneId());
+            result.ifPresent(drone -> {
+                Delivery currentDelivery = drone.getCurrentDelivery();
+                currentDelivery.setPicked_up(deliveryUpdate.getDeliveryStatus() == DeliveryStatus.PICKING_UP);
+            });
+
             System.out.println(deliveryUpdate);
         } catch (IOException e) {
             e.printStackTrace();

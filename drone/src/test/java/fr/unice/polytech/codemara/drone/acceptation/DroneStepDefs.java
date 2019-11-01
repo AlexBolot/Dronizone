@@ -205,6 +205,7 @@ public class DroneStepDefs {
         Delivery delivery = new Delivery();
         delivery.setTarget_location(new Location(45, 7));
         delivery.setPickup_location(new Location(45, 8));
+        delivery.setPicked_up(true); // Drone already picked up package
         deliveryRepository.save(delivery);
         this.context.currentDrone.setCurrentDelivery(delivery);
         Whereabouts whereabouts = new Whereabouts(0, new Location(45, 7), 100, 300);
@@ -213,7 +214,24 @@ public class DroneStepDefs {
         this.context.currentDrone.setBatteryLevel(100);
         this.context.currentDrone.setDroneStatus(ACTIVE);
         droneRepository.save(context.currentDrone);
+    }
 
+
+    @Given("A drone going to pickup")
+    public void aDroneGoingToPickup() {
+        this.context.currentDrone = new Drone();
+        Delivery delivery = new Delivery();
+        delivery.setTarget_location(new Location(45, 7));
+        delivery.setPickup_location(new Location(45, 8));
+        delivery.setPicked_up(false); // Drone is going to pick up package
+        deliveryRepository.save(delivery);
+        this.context.currentDrone.setCurrentDelivery(delivery);
+        Whereabouts whereabouts = new Whereabouts(0, new Location(45, 7), 100, 300);
+        whereaboutsRepository.save(whereabouts);
+        this.context.currentDrone.setWhereabouts(whereabouts);
+        this.context.currentDrone.setBatteryLevel(100);
+        this.context.currentDrone.setDroneStatus(ACTIVE);
+        droneRepository.save(context.currentDrone);
     }
 
     @Then("The drone is added in the database")
@@ -232,4 +250,5 @@ public class DroneStepDefs {
         Drone drone  = droneRepository.findAll().iterator().next();
         assertNotEquals(this.context.currentDrone.getDroneID(),drone.getDroneID());
     }
+
 }
