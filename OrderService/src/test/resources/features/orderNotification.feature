@@ -1,4 +1,6 @@
 Feature: Notify Clients when their deliveries update
+
+
   Scenario: Roger already order an Item
     Given A drone with a client delivery
     When The drone is near his delivery location
@@ -11,3 +13,4 @@ Feature: Notify Clients when their deliveries update
     When Drone is canceled by fleet manager
     Then A notification is send to client
     And The mock server is teared down
+
