@@ -118,8 +118,8 @@ public class OrderNotificationStepDefs {
         }
 
         request = new HttpRequest();
-        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
-        int serverPort = 2000;
+        request.withMethod("POST").withPath("/notifications/customer/" + order.getCustomer().getId() + "/order");
+         int serverPort = 2000;
         clientServer = startClientAndServer(serverPort);
         mockServer = new MockServerClient("localhost", serverPort);
         mockServer.when(request).respond(response().withStatusCode(200));
@@ -135,7 +135,12 @@ public class OrderNotificationStepDefs {
 
     @Then("^A notification is send to client$")
     public void verifyCancelNotification() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         mockServer.verify(request, VerificationTimes.atLeast(1));
     }
-    
+
 }
