@@ -103,18 +103,18 @@ public class OrderStepDefs {
 
     private JsonElement jsonElement;
 
+    @Given("^An Item and the client information$")
+    public void setupItemAndCustomer() {
+        item = new Item("Persona 5");
+        customer = new Customer("Roger", "Regor");
+    }
+
     @And("The mock server is teared down")
     public void theMockServerIsTearedDown() {
         if (this.clientServer != null) this.clientServer.stop();
         this.mockServer = null;
         if (warehouseContainer != null) warehouseContainer.stop();
         if (warehouseRecords != null) warehouseRecords.clear();
-    }
-
-    @Given("^An Item and the client information$")
-    public void setupItemAndCustomer() {
-        item = new Item("Persona 5");
-        customer = new Customer("Roger", "Regor");
     }
 
     @When("^The client will order this Item$")
@@ -264,58 +264,6 @@ public class OrderStepDefs {
         mockServer.verify(request, VerificationTimes.atLeast(1));
         mockServer.close();
         clientServer.close();
-    }
-
-    @Given("^Bad weather forecast$")
-    public void setMock() {
-        item = new Item("Persona 5");
-        itemRepo.save(item);
-        customer = new Customer("Roger", "Regor");
-        customerRepo.save(customer);
-        Coord coord = new Coord("0", "0");
-        coordRepo.save(coord);
-        order = new Order(coord, item, Status.PENDING, customer, "Bla bla bla");
-        orderRepo.save(order);
-
-        // set up the Kafka producer properties
-        Map<String, Object> senderProperties =
-                KafkaTestUtils.senderProps(System.getProperty("spring.kafka.bootstrap-servers"));
-
-        // create a Kafka producer factory
-        ProducerFactory<String, String> producerFactory =
-                new DefaultKafkaProducerFactory<>(
-                        senderProperties);
-
-        // create a Kafka template
-        kafkaTemplate = new KafkaTemplate<>(producerFactory);
-        // set the default topic to send to
-        kafkaTemplate.setDefaultTopic("order-cancelled");
-        // wait until the partitions are assigned
-        for (MessageListenerContainer messageListenerContainer : kafkaListenerEndpointRegistry
-                .getListenerContainers()) {
-            ContainerTestUtils.waitForAssignment(messageListenerContainer,
-                    Integer.parseInt(System.getProperty("spring.kafka.partitions-per-topics")));
-        }
-
-        request = new HttpRequest();
-        request.withMethod("POST").withPath("/notification/customer/" + order.getCustomer().getId() + "/order");
-        int serverPort = 20000;
-        clientServer = startClientAndServer(serverPort);
-        mockServer = new MockServerClient("localhost", serverPort);
-        mockServer.when(request).respond(response().withStatusCode(200));
-        System.setProperty("NOTIFY_HOST", "http://localhost:20000");
-    }
-
-    @When("^Drone is cancel by fleet manager$")
-    public void setCancelRequest() throws Exception {
-        Map<String, Object> params = new HashMap<>();
-        params.put("orderId", order.getId());
-        this.kafkaTemplate.send("order-cancelled", new ObjectMapper().writeValueAsString(params));
-    }
-
-    @Then("^A notification is send to client$")
-    public void verifyCancelNotification() {
-        mockServer.verify(request, VerificationTimes.atLeast(1));
     }
 
     @Given("^There are no customer$")

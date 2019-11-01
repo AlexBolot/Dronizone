@@ -55,17 +55,17 @@ public class OrderController {
     }
 
     @KafkaListener(topics = "order-soon", groupId = "order-service")
-    public void listenForCancelled(String content) throws IOException {
+    public void listenForSoon(String content) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
         int orderId = jsonNode.get("orderId").asInt();
         sendNotification("Your delivery will arrive in 10 minutes", orderId);
     }
 
     @KafkaListener(topics = "order-cancelled", groupId = "order-service")
-    public void listenForSoon(String content) throws IOException {
+    public void listenForCancelled(String content) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
         int orderId = jsonNode.get("orderId").asInt();
-        sendNotification("Your delivery is cancel", orderId);
+        sendNotification("Your delivery is cancelled", orderId);
     }
 
     private void sendNotification(String payload, int orderId) {
