@@ -4,23 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.unice.polytech.entities.Customer;
 import fr.unice.polytech.entities.Order;
-import fr.unice.polytech.entities.OrderStatusMessage;
-import fr.unice.polytech.entities.Status;
-import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import gherkin.deps.com.google.gson.Gson;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -32,15 +21,18 @@ import java.util.Optional;
 @RequestMapping(path = "/order/notify", produces = "application/json")
 public class OrderController {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
     private static final String NOTIFY_URL = "http://localhost:8080";
-    private static final String NOTIFY_PATH = "/notifications/customer/";
 
-    @Autowired
-    private OrderRepo orderRepo;
+    private static final String ORDER_ID_JSON_TAG = "orderId";
 
-    @Autowired
-    private Environment env;
+    private final OrderRepo orderRepo;
+
+    private final Environment env;
+
+    public OrderController(Environment env, OrderRepo orderRepo) {
+        this.env = env;
+        this.orderRepo = orderRepo;
+    }
 
     @GetMapping("/**")
     public String debug() {
@@ -50,21 +42,21 @@ public class OrderController {
     @KafkaListener(topics = "order-delivered", groupId = "order-service")
     public void listenForDelivered(String content) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
-        int orderId = jsonNode.get("orderId").asInt();
+        int orderId = jsonNode.get(ORDER_ID_JSON_TAG).asInt();
         sendNotification("Your delivery has been delivered", orderId);
     }
 
     @KafkaListener(topics = "order-soon", groupId = "order-service")
     public void listenForCancelled(String content) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
-        int orderId = jsonNode.get("orderId").asInt();
+        int orderId = jsonNode.get(ORDER_ID_JSON_TAG).asInt();
         sendNotification("Your delivery will arrive in 10 minutes", orderId);
     }
 
     @KafkaListener(topics = "order-cancelled", groupId = "order-service")
     public void listenForSoon(String content) throws IOException {
         ObjectNode jsonNode = new ObjectMapper().readValue(content, ObjectNode.class);
-        int orderId = jsonNode.get("orderId").asInt();
+        int orderId = jsonNode.get(ORDER_ID_JSON_TAG).asInt();
         sendNotification("Your delivery is cancel", orderId);
     }
 
@@ -84,7 +76,7 @@ public class OrderController {
             if (notifyUrl == null) notifyUrl = NOTIFY_URL;
 
             RestTemplate restTemplate = new RestTemplate();
-            restTemplate.postForObject(notifyUrl + NOTIFY_PATH + customer.getId() + "/order", params, String.class);
+            restTemplate.postForObject(notifyUrl + "/notifications/customer/" + customer.getId() + "/order", params, String.class);
         }
     }
 }

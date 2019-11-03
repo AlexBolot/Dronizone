@@ -3,17 +3,21 @@ package fr.unice.polytech.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceImpl;
-import fr.unice.polytech.entities.*;
+import fr.unice.polytech.entities.Customer;
+import fr.unice.polytech.entities.NotificationMedium;
+import fr.unice.polytech.entities.Order;
+import fr.unice.polytech.entities.Status;
 import fr.unice.polytech.repo.CoordRepo;
 import fr.unice.polytech.repo.CustomerRepo;
 import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
 import fr.unice.polytech.service.OrderService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,30 +26,26 @@ import java.util.Optional;
 @Service
 @AutoJsonRpcServiceImpl
 public class OrderServiceImpl implements OrderService {
-    // FIXME: 20/10/2019 Kill it with fire, and replace it with a kafka topic post
-    private static final String WAREHOUSE_PATH = "/warehouse/orders";
-    private static final String WAREHOUSE_URL = "http://localhost:8080";
-
-    @Autowired
     private CustomerRepo customerRepo;
 
-    @Autowired
     private ItemRepo itemRepo;
 
-    @Autowired
     private OrderRepo orderRepo;
 
-    @Autowired
     private CoordRepo coordRepo;
 
-    @Autowired
-    private RestTemplate restTemplate;
 
-    @Autowired
-    private Environment env;
-
-    @Autowired
     private KafkaTemplate kafkaTemplate;
+    private Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
+
+    @Autowired
+    public OrderServiceImpl(CustomerRepo customerRepo, ItemRepo itemRepo, OrderRepo orderRepo, CoordRepo coordRepo, Environment env, KafkaTemplate kafkaTemplate) {
+        this.customerRepo = customerRepo;
+        this.itemRepo = itemRepo;
+        this.orderRepo = orderRepo;
+        this.coordRepo = coordRepo;
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     @Override
     public Order orderItem(Order order) {
@@ -55,9 +55,6 @@ public class OrderServiceImpl implements OrderService {
         order.setCustomer(customerRepo.save(order.getCustomer()));
         coordRepo.save(order.getCoord());
         orderRepo.save(order);
-
-        String warehouseUrl = env.getProperty("WAREHOUSE_HOST");
-        if (warehouseUrl == null) warehouseUrl = WAREHOUSE_URL;
 
 
         Map<String, Object> params = new HashMap<>();
@@ -74,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             kafkaTemplate.send("order-create", new ObjectMapper().writeValueAsString(params));
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            logger.error("OrderServiceImpl.orderItem", e);
         }
 
         return order;
