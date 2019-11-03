@@ -11,6 +11,7 @@ Feature: DroneUpdating
 
   Scenario: When the distance goes below the 200m thresholds the drone service pings the order service
     Given An empty fleet
+
     And A mocked Order Service
     And A delivering drone
     And mocked drone publishers

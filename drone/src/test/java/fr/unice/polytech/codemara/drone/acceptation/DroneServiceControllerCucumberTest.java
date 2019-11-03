@@ -2,6 +2,7 @@ package fr.unice.polytech.codemara.drone.acceptation;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
@@ -11,7 +12,7 @@ import org.springframework.kafka.test.rule.EmbeddedKafkaRule;
 @CucumberOptions(features = "src/test/resources/features", plugin = {"pretty", "json:target/cucumber-report.json"})
 public class DroneServiceControllerCucumberTest {
     @ClassRule
-    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true,
+    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, 1,
             "drone-status",
             "drone-commands",
             "drone-delivery-update",
@@ -28,4 +29,8 @@ public class DroneServiceControllerCucumberTest {
                 String.valueOf(rule.getEmbeddedKafka().getPartitionsPerTopic()));
     }
 
+    @AfterClass
+    public static void afterAll() {
+
+    }
 }

@@ -20,17 +20,18 @@ public class OrderService {
     private KafkaTemplate kafkaTemplate;
 
     public void notifyDeliveryCancel(Delivery delivery) {
-        logger.info("Delivery was cancel : " + delivery);
+        logger.info("Delivery was cancel : {}", delivery);
+
         sendNotification(delivery, "order-cancelled", OrderStatus.CANCEL);
     }
 
     public void notifyDeliverySoon(Delivery delivery) {
-        logger.info("Delivery will arrived soon : " + delivery);
+        logger.info("Delivery will arrived soon : {}", delivery);
         sendNotification(delivery, "order-soon", OrderStatus.SOON);
     }
 
     public void notifyDeliveryFinish(Delivery delivery) {
-        logger.info("Delivery is finish : " + delivery);
+        logger.info("Delivery is finish : {}", delivery);
         sendNotification(delivery, "order-delivered", OrderStatus.DELIVERED);
     }
 
@@ -44,7 +45,7 @@ public class OrderService {
             params.put("timestamp", System.currentTimeMillis());
             kafkaTemplate.send(topic, new ObjectMapper().writeValueAsString(params));
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            logger.error("OrderService.sendNotification", e);
         }
     }
 }

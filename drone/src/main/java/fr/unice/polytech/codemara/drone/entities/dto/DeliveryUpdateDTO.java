@@ -1,5 +1,12 @@
 package fr.unice.polytech.codemara.drone.entities.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
 public class DeliveryUpdateDTO {
 
     private long droneId;
@@ -8,6 +15,6 @@ public class DeliveryUpdateDTO {
 
     private long itemId;
 
-    private OrderStatus updateType;
+    private DeliveryStatus updateType;
 
 }

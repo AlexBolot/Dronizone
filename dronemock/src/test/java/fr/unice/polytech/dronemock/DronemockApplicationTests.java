@@ -1,5 +1,6 @@
 package fr.unice.polytech.dronemock;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.dronemock.models.Delivery;
 import fr.unice.polytech.dronemock.models.Location;
@@ -14,11 +15,21 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.MessageListenerContainer;
-import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.rule.EmbeddedKafkaRule;
 import org.springframework.kafka.test.utils.ContainerTestUtils;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -26,17 +37,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class DronemockApplicationTests {
 
     @ClassRule
-    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "drones", "drones-commands", "drones-pickup", "drones-deliveries");
-
+    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, 1, "drones", "drones-commands", "drones-pickup", "drones-deliveries", "drone-commands");
+    private static String RECEIVER_TOPIC = "drones-commands";
     private KafkaTemplate kafkaTemplate;
-
     @Autowired
     private KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
-
     @Autowired
     private MockMvc mockMvc;
 
-    private static String RECEIVER_TOPIC = "drones-commands";
 
 
     @BeforeClass
@@ -66,7 +74,7 @@ public class DronemockApplicationTests {
         for (MessageListenerContainer messageListenerContainer : kafkaListenerEndpointRegistry
                 .getListenerContainers()) {
             ContainerTestUtils.waitForAssignment(messageListenerContainer,
-                    rule.getEmbeddedKafka().getPartitionsPerTopic());
+                    1);
         }
     }
 
@@ -81,13 +89,14 @@ public class DronemockApplicationTests {
     @Test
     public void contextLoads() {
         // Test id the application is launching properly
+        assertTrue("The context should load, you are in trouble", true);
     }
 
     @Test
     public void initCommandTest() throws Exception {
         String event = "{\"type\":\"INITIALISATION\",\"target\":{\"droneID\":-10 } ,\"assignedId\":\"5\"}";
 
-        this.kafkaTemplate.sendDefault(event);
+        this.kafkaTemplate.send("drone-commands", event);
         Thread.sleep(1000);
         MvcResult a = mockMvc.perform(get("/commands/debug/drones")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -105,8 +114,8 @@ public class DronemockApplicationTests {
         Delivery delivery = new Delivery(5, 5, 5, new Location(7, 7), new Location(8, 8), true);
         String jsonDelivery = new ObjectMapper().writeValueAsString(delivery);
 
-        String event = "{\"type\":\"DELIVERY\",\"target\":{\"droneID\":" + String.valueOf(droneid) + " },\"delivery\":" + jsonDelivery + "}";
-        this.kafkaTemplate.sendDefault(event);
+        String event = "{\"type\":\"DELIVERY\",\"target\":{\"droneID\":" + droneid + " },\"delivery\":" + jsonDelivery + "}";
+        this.kafkaTemplate.send("drone-commands", event);
         Thread.sleep(1000);
         MvcResult a = mockMvc.perform(get("/commands/debug/" + droneid + "/delivery")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -118,7 +127,7 @@ public class DronemockApplicationTests {
 
     private long initializeDrone() throws InterruptedException {
         String event = "{\"type\":\"INITIALISATION\",\"target\":{\"droneID\":-10 }, \"assignedId\":\"5\"}";
-        this.kafkaTemplate.sendDefault(event);
+        this.kafkaTemplate.send("drone-commands", event);
         Thread.sleep(1000);
         return 5;
     }
@@ -130,9 +139,8 @@ public class DronemockApplicationTests {
 
         Location base = new Location(5, 5);
         String jsonBase = new ObjectMapper().writeValueAsString(base);
-
-        String event = "{\"type\":\"CALLBACK\",\"target\":{\"droneID\":" + String.valueOf(droneid) + " }, \"baseLocation\":" + jsonBase + "}";
-        this.kafkaTemplate.sendDefault(event);
+        String event = "{\"type\":\"CALLBACK\",\"target\":{\"droneID\":" + droneid + " }, \"baseLocation\":" + jsonBase + "}";
+        this.kafkaTemplate.send("drone-commands", event);
         Thread.sleep(1000);
         MvcResult a = mockMvc.perform(get("/commands/debug/" + droneid + "/base")
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -141,9 +149,6 @@ public class DronemockApplicationTests {
         Location received = new ObjectMapper().readValue(a.getResponse().getContentAsString(), Location.class);
         assertEquals(base, received);
     }
-
-
-
 
 
 
