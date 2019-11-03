@@ -13,6 +13,7 @@ import javax.persistence.*;
 public class CustomerOrder {
     private int itemId;
     private int customerId;
+    @Embedded
     private Coord deliveryLocation;
 
     @Id
