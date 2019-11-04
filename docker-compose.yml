@@ -22,6 +22,7 @@ services:
     depends_on:
       - postgres-warehouse
       - kafka
+      - kafka-awaiter
     links:
       - postgres-warehouse
     environment:
@@ -290,6 +291,15 @@ services:
 #    networks:
 #      - dronazone-network
 #      - monitoring
+  kafka-awaiter:
+    image: dadarek/wait-for-dependencies
+    depends_on:
+      - kafka
+      - zookeeper
+    command: zookeeper:2181 kafka:9092
+    networks:
+      - dronazone-network
+      - monitoring
 networks:
   dronazone-network:
     driver: bridge

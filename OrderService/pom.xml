@@ -8,11 +8,9 @@
     <artifactId>OrderService</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <!--    <packaging>war</packaging>-->
 
     <name>OrderService</name>
-    <!-- FIXME change it to the project's website -->
-    <url>http://www.example.com</url>
+    <url>https://dronazone.galles.io</url>
 
     <parent>
         <artifactId>dronizone-1920-soa-team-codemara</artifactId>

@@ -5,12 +5,14 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class PickupState {
+public class DeliveryUpdate {
 
     private long droneId;
 
     private long orderId;
 
     private long itemId;
+
+    private DeliveryStatus updateType;
 
 }

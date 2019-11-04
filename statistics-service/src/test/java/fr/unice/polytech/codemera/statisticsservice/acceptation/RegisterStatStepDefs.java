@@ -1,56 +1,52 @@
 package fr.unice.polytech.codemera.statisticsservice.acceptation;
 
-import fr.unice.polytech.codemera.statisticsservice.entities.Statistics;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.influxdb.InfluxDB;
-import org.influxdb.dto.Query;
-import org.influxdb.impl.InfluxDBResultMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.List;
+import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 
+@ActiveProfiles("test")
+@RunWith(SpringRunner.class)
+@SpringBootTest
 public class RegisterStatStepDefs {
+    @MockBean
+    InfluxDB influxDB = mock(InfluxDB.class);
 
-    @Autowired
-    InfluxDB influxDB;
-
-    @Autowired
-    KafkaTemplate kafkaTemplate;
+    private KafkaTemplate kafkaTemplate;
 
     private int entries;
+    private ArgumentCaptor<String> valueCapture;
 
     @Given("A command to be packed")
     public void aCommandToBePacked() {
-        Query query = new Query("Select * from orders", "dronazone");
-        InfluxDBResultMapper resultMapper = new InfluxDBResultMapper();
-        List<Statistics> statisticsList = resultMapper
-                .toPOJO(influxDB.query(query), Statistics.class);
-        entries = statisticsList.size();
-        doAnswer(invocationOnMock -> {
-            return null;
-        }).when(influxDB).write(anyString());
+        valueCapture = ArgumentCaptor.forClass(String.class);
+        doNothing().when(influxDB).write(valueCapture.capture());
     }
 
     @When("Klaus packs the order")
     public void klausPacksTheOrder() {
-        kafkaTemplate.send("orders", "{\"order_id\":1,\"status\":\"packed\"");
+        kafkaTemplate.send("order-packed", "{\"order_id\":1,\"status\":\"packed\"");
 
     }
 
     @Then("a new entry is registred in the database")
     public void aNewEntryIsRegistredInTheDatabase() {
-        Query query = new Query("Select * from orders", "dronazone");
-        InfluxDBResultMapper resultMapper = new InfluxDBResultMapper();
-        List<Statistics> statisticsList = resultMapper
-                .toPOJO(influxDB.query(query), Statistics.class);
-        assertEquals(entries + 1, statisticsList.size());
+
     }
 
     @Given("A command to be delivered")
@@ -61,4 +57,19 @@ public class RegisterStatStepDefs {
     public void theOrderIsDelivered() {
     }
 
+    @Given("A wired kafka template")
+    public void aWiredKafkaTemplate() {
+        Map<String, Object> senderProperties =
+                KafkaTestUtils.senderProps(
+                        System.getProperty("spring.kafka.bootstrap-servers"));
+
+        // create a Kafka producer factory
+        ProducerFactory<String, String> producerFactory =
+                new DefaultKafkaProducerFactory<>(
+                        senderProperties);
+
+        // create a Kafka template
+        kafkaTemplate = new KafkaTemplate<>(producerFactory);
+
+    }
 }

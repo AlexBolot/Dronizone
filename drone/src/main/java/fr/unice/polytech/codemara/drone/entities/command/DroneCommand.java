@@ -14,21 +14,19 @@ import lombok.RequiredArgsConstructor;
 @AllArgsConstructor
 public class DroneCommand {
 
-    private final CommandType type;
+    private final CommandType command;
 
     private Drone target;
 
     private Object payload;
 
-    /**
-     * constructor for child purposes, should not be used
-     */
-    private DroneCommand() {
-        type = null;
+
+    public long getDroneId() {
+        return target.getDroneID();
     }
 
     public DroneCommand copyWith(Drone target) {
-        DroneCommand copy = new DroneCommand(this.type);
+        DroneCommand copy = new DroneCommand(this.command);
         copy.target = target;
         copy.payload = payload;
         return copy;
