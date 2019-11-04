@@ -26,21 +26,20 @@ import static fr.unice.polytech.dronemock.models.DeliveryStatus.PICKING_UP;
 @RequestMapping(path = "/commands", produces = "application/json")
 public class DroneMockController {
 
-    private static final Logger logger = LoggerFactory.getLogger(DroneMockController.class);
-
     private static final String INIT_TYPE = "INITIALISATION";
     private static final String DELIVERY_TYPE = "DELIVERY";
     private static final String CALLBACK_TYPE = "CALLBACK";
-
-    private Environment env;
-    private KafkaTemplate kafkaTemplate;
-
     private final List<Drone> drones = new ArrayList<>();
+    @Autowired
+    private Environment env;
+    @Autowired
+    private KafkaTemplate kafkaTemplate;
     private List<JsonNode> commandHistory = new ArrayList<>();
     private Map<Drone, Location> bases = new HashMap<>();
     private Map<Drone, Delivery> deliveries = new HashMap<>();
     private Map<Drone, Boolean> pickups = new HashMap<>();
     private Map<Drone, Location> targets = new HashMap<>();
+    private Logger logger = LoggerFactory.getLogger(DroneMockController.class);
 
     public DroneMockController(Environment env, KafkaTemplate kafkaTemplate) {
         this.env = env;
@@ -122,9 +121,9 @@ public class DroneMockController {
 
         drones.forEach(drone -> {
             try {
-                update_drone_state(drone);
+                updateDroneState(drone);
             } catch (JsonProcessingException e) {
-                e.printStackTrace();
+                logger.error("DroneMockController.sendToDroneService", e);
             }
         });
 
@@ -136,35 +135,21 @@ public class DroneMockController {
      * @param drone
      * @throws JsonProcessingException
      */
-    private void update_drone_state(Drone drone) throws JsonProcessingException {
+    private void updateDroneState(Drone drone) throws JsonProcessingException {
         DroneState droneState = new DroneState(drone.getBatteryLevel(),
                 drone.getWhereabouts(),
                 drone.getDroneID(), drone.getDroneStatus(), System.currentTimeMillis());
-        kafkaTemplate.send("drones", new ObjectMapper().writeValueAsString(droneState));
-        System.out.println("publishing: " + new ObjectMapper().writeValueAsString(droneState));
+        String droneStateJson = new ObjectMapper().writeValueAsString(droneState);
+        kafkaTemplate.send("drones", droneStateJson);
+        logger.info("publishing: {}", droneStateJson);
 
 
         Location location = drone.getWhereabouts().getLocation();
 
         if (drone.getDroneStatus() == DroneStatus.ACTIVE) {
-
             if (this.targets.containsKey(drone)) {
                 if (drone.getWhereabouts().getDistanceToTarget() < 100) {
-                    Delivery delivery = deliveries.get(drone);
-                    if (!this.pickups.get(drone)) {
-                        this.pickups.put(drone, true);
-                        this.targets.put(drone, delivery.getTarget_location());
-                        // TODO send start delivery to Drone service
-                        PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), PICKING_UP);
-                        this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
-                    } else {
-                        PickupState p = new PickupState(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DELIVERING);
-                        drone.setDroneStatus(DroneStatus.ASIDE);
-                        this.deliveries.remove(drone);
-                        this.targets.remove(drone);
-                        // TODO send delivery finish to Drone service
-                        this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
-                    }
+                    dispatchDeliveryUpdate(drone, deliveries.get(drone));
                 } else {
                     moveDrone(location, this.targets.get(drone));
                 }
@@ -189,6 +174,23 @@ public class DroneMockController {
                 if (drone.getBatteryLevel() < 100)
                     drone.setBatteryLevel(drone.getBatteryLevel() + 1);
             }
+        }
+    }
+
+    private void dispatchDeliveryUpdate(Drone drone, Delivery delivery) throws JsonProcessingException {
+        if (!this.pickups.get(drone)) {
+            this.pickups.put(drone, true);
+            this.targets.put(drone, delivery.getTarget_location());
+            // TODO send start delivery to Drone service
+            DeliveryUpdate p = new DeliveryUpdate(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DeliveryStatus.DELIVERING);
+            this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
+        } else {
+            DeliveryUpdate p = new DeliveryUpdate(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DeliveryStatus.DELIVERED);
+            drone.setDroneStatus(DroneStatus.ASIDE);
+            this.deliveries.remove(drone);
+            this.targets.remove(drone);
+            // TODO send delivery finish to Drone service
+            this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
         }
     }
 
@@ -310,16 +312,3 @@ public class DroneMockController {
         return Math.sqrt(distance);
     }
 }
-
-//{
-//    "droneID":"aaa2",
-//    "battery_level":80,
-//    "whereabouts":{
-//        "location":{
-//            "latitude":10.0,
-//            "longitude":10.0
-//        },
-//        "altitude":12,
-//        "distanceToTarget":250
-//    }
-//}

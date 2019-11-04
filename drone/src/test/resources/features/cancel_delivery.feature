@@ -1,5 +1,7 @@
 Feature: DeliveryCancelled
 
+  Background:
+    Given An empty DeliveryHistory
   Scenario: CancelingNotifiesOrder
     Given An active Drone Fleet
     And A Mocked External Drone Commander

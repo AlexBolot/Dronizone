@@ -1,7 +1,9 @@
 package fr.unice.polytech.codemara.drone.entities.command;
 
 import fr.unice.polytech.codemara.drone.entities.Drone;
+import lombok.Data;
 
+@Data
 public class InitCommand extends DroneCommand {
 
     public final long assignedId;

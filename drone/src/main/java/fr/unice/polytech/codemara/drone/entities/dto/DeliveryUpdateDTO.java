@@ -12,6 +12,6 @@ public class DeliveryUpdateDTO {
     private long droneId;
     private long orderId;
     private long itemId;
-    //private OrderStatus updateType;
+    //private DeliveryStatus updateType;
     private DeliveryStatus deliveryStatus;
 }

@@ -3,39 +3,31 @@ package fr.unice.polytech.codemara.warehouse.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.warehouse.entities.CustomerOrder;
 import fr.unice.polytech.codemara.warehouse.entities.repositories.OrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
-import java.io.DataOutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 @RestController
 @RequestMapping(path = "/warehouse", produces = "application/json")
 public class WarehouseController {
 
-    private final Environment env;
-    private final String warehouse_lon = "10.0";
-    private final String warehouse_lat = "10.0";
-    final OrderRepository orderRepository;
+    private static final String WAREHOUSE_LON = "10.0";
+    private static final String WAREHOUSE_LAT = "10.0";
+    private final OrderRepository orderRepository;
 
-    @Autowired
-    private KafkaTemplate kafkaTemplate;
+    private final KafkaTemplate kafkaTemplate;
+    private Logger logger = LoggerFactory.getLogger(WarehouseController.class);
 
-    public WarehouseController(Environment env, OrderRepository orderRepository) {
-        this.env = env;
+    public WarehouseController(OrderRepository orderRepository, KafkaTemplate kafkaTemplate) {
         this.orderRepository = orderRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     @GetMapping("/orders")
@@ -44,8 +36,8 @@ public class WarehouseController {
     }
 
     @PostMapping("/orders")
-    public String addOrder(@RequestBody CustomerOrder order) {
-        return orderRepository.save(order).toString();
+    public String addOrder(@RequestBody String order) throws IOException {
+        return orderRepository.save(new ObjectMapper().readValue(order, CustomerOrder.class)).toString();
     }
 
     @GetMapping("/orders/{id}")
@@ -59,28 +51,26 @@ public class WarehouseController {
         if (ready.isPresent()) {
             ready.get().setStatus(CustomerOrder.OrderStatus.READY);
             orderRepository.save(ready.get());
+            try {
+
+                Map<String, Object> parameters = new HashMap<>();
+                parameters.put("orderid", "id");
+                Map<String, String> position = new HashMap<>();
+                position.put("latitude", WAREHOUSE_LAT);
+                position.put("longitude", WAREHOUSE_LON);
+                parameters.put("pickup_location", position);
+                position = new HashMap<>();
+                position.put("latitude", ready.get().getDeliveryLocation().getLatitude() + "");
+                position.put("longitude", ready.get().getDeliveryLocation().getLongitude() + "");
+                parameters.put("target_location", position);
+                parameters.put("itemId", ready.get().getItemId());
+
+                kafkaTemplate.send("order-packed", new ObjectMapper().writeValueAsString(parameters));
+            } catch (Exception e) {
+                logger.error("WarehouseController.OrderReady ", e);
+            }
         }
-        try {
-//            URL url = new URL(env.getProperty("DRONE_HOST")+"/drone/request_delivery");
-//            RestTemplate restTemplate = new RestTemplate();
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("orderid", "id");
-            Map<String,String> position = new HashMap<>();
-            position.put("latitude",this.warehouse_lat);
-            position.put("longitude",this.warehouse_lon);
-            parameters.put("pickup_location",position);
-            position = new HashMap<>();
-            position.put("latitude",ready.get().getDeliveryLocation().getLatitude() + "");
-            position.put("longitude",ready.get().getDeliveryLocation().getLongitude() + "");
-            parameters.put("target_location",position);
-            parameters.put("itemId",ready.get().getItemId());
-//            ResponseEntity<String> response
-//                    = restTemplate.postForEntity(url.toString(),parameters, String.class);
-//            System.out.println("response = " + response);
-            kafkaTemplate.send("order-packed", new ObjectMapper().writeValueAsString(parameters));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
 
         return "Message envoyé à un autre service";
     }
@@ -91,7 +81,7 @@ public class WarehouseController {
             CustomerOrder order = new ObjectMapper().readValue(message, CustomerOrder.class);
             orderRepository.save(order);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("WarehouseController.orderCreate", e);
         }
     }
 

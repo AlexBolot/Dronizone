@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @RunWith(SpringRunner.class)
@@ -37,18 +37,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 public class DronemockApplicationTests {
 
     @ClassRule
-    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, 1, "drones-commands", "drones-pickup", "drones-deliveries");
-
+    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, 1, "drones", "drones-commands", "drones-pickup", "drones-deliveries", "drone-commands");
+    private static String RECEIVER_TOPIC = "drones-commands";
     private KafkaTemplate kafkaTemplate;
-
     @Autowired
     private KafkaListenerEndpointRegistry kafkaListenerEndpointRegistry;
-
     @Autowired
     private MockMvc mockMvc;
-
-    private static String RECEIVER_TOPIC = "drones-commands";
-
 
     @BeforeClass
     public static void beforeAll() {
@@ -77,7 +72,7 @@ public class DronemockApplicationTests {
         for (MessageListenerContainer messageListenerContainer : kafkaListenerEndpointRegistry
                 .getListenerContainers()) {
             ContainerTestUtils.waitForAssignment(messageListenerContainer,
-                    rule.getEmbeddedKafka().getPartitionsPerTopic());
+                    1);
         }
     }
 
@@ -92,6 +87,7 @@ public class DronemockApplicationTests {
     @Test
     public void contextLoads() {
         // Test id the application is launching properly
+        assertTrue("The context should load, you are in trouble", true);
     }
 
     @Test
@@ -107,7 +103,6 @@ public class DronemockApplicationTests {
         List<Long> drones = Arrays.stream(new ObjectMapper().readValue(a.getResponse().getContentAsString(), JsonNode[].class)).map(n -> n.get("droneID").asLong()).collect(Collectors.toList());
         assertTrue(drones.contains(5L));
     }
-
 
     @Test
     public void deliveryCommandTest() throws Exception {
@@ -133,14 +128,12 @@ public class DronemockApplicationTests {
         return 5;
     }
 
-
     @Test
     public void callbackCommandTest() throws Exception {
         long droneid = initializeDrone();
 
         Location base = new Location(5, 5);
         String jsonBase = new ObjectMapper().writeValueAsString(base);
-
         String event = "{\"type\":\"CALLBACK\",\"target\":{\"droneID\":" + droneid + " }, \"baseLocation\":" + jsonBase + "}";
         this.kafkaTemplate.send("drone-commands", event);
         Thread.sleep(1000);
@@ -151,6 +144,4 @@ public class DronemockApplicationTests {
         Location received = new ObjectMapper().readValue(a.getResponse().getContentAsString(), Location.class);
         assertEquals(base, received);
     }
-
-
 }

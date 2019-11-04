@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static fr.unice.polytech.codemara.drone.entities.DroneStatus.CALLED_HOME;
@@ -74,13 +75,17 @@ public class ServiceMockStepDefs {
         // start the container and underlying message listener
         this.context.orderContainer.start();
         // wait until the container has the required number of assigned partitions
-        ContainerTestUtils.waitForAssignment(this.context.orderContainer, 3 * 2);
+        ContainerTestUtils.waitForAssignment(this.context.orderContainer, 3);
     }
 
     @Then("^The OrderService receives (\\d+) delivery notification$")
     public void theOrderServiceReceivesANotification(int notificationCount) throws InterruptedException {
-        Thread.sleep(1000);
         List<ConsumerRecord<String, String>> received = new ArrayList<>();
+
+        ConsumerRecord<String, String> poll = droneRecords.poll(1, TimeUnit.SECONDS);
+        if (poll != null)
+            received.add(poll);
+
         orderRecords.drainTo(received);
         List<String> actual = received.stream().map(ConsumerRecord::value).collect(Collectors.toList());
         assertEquals(notificationCount, actual.size());
@@ -112,7 +117,7 @@ public class ServiceMockStepDefs {
         // start the container and underlying message listener
         this.context.droneContainer.start();
         // wait until the container has the required number of assigned partitions
-        ContainerTestUtils.waitForAssignment(this.context.droneContainer, 2);
+        ContainerTestUtils.waitForAssignment(this.context.droneContainer, 1);
     }
 
     @Then("A delivery canceled notification is sent to the order service for each delivery")
@@ -158,9 +163,11 @@ public class ServiceMockStepDefs {
         droneRecords.drainTo(received);
         this.droneCommander.sendCommand(deliveryCommand);
 
-        Thread.sleep(10000);
 
         received = new ArrayList<>();
+        ConsumerRecord<String, String> poll = droneRecords.poll(1, TimeUnit.SECONDS);
+        if (poll != null)
+            received.add(poll);
         droneRecords.drainTo(received);
         List<String> actual = received.stream().map(ConsumerRecord::value).collect(Collectors.toList());
         assertEquals(1, actual.size());
