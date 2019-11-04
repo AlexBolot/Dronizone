@@ -17,6 +17,11 @@ import javax.persistence.Id;
 @Entity
 public class Coord {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private int orderId;
+
+
     private double longitude;
     private double latitude;
 

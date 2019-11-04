@@ -209,6 +209,8 @@ services:
   zookeeper:
     image: wurstmeister/zookeeper
     container_name: zookeeper
+    expose:
+      - 2181
     ports:
       - 2181:2181
     networks:
@@ -278,18 +280,32 @@ services:
       INFLUXDB_USER: dronazone
       INFLUXDB_USER_PASSWORD: dronazone
 
-#  start-holder:
-#    image: dadarek/wait-for-dependencies
-#    depends_on:
-#      - order-server
-#      - drone-server
-#      - drone-mock
-#      - notification
-#      - warehouse-server
-#    command: order-server:8080 drone-server:8080 drone-mock:8080 notification:8080 warehouse-server:8080
-#    networks:
-#      - dronazone-network
-#      - monitoring
+  start-holder:
+    image: dadarek/wait-for-dependencies
+    depends_on:
+      - order-server
+      - drone-server
+      - drone-mock
+      - notification
+      - warehouse-server
+    command: order-server:8080 drone-server:8080 drone-mock:8080 notification:8080 warehouse-server:8080
+    networks:
+      - dronazone-network
+      - monitoring
+
+  start-dependency-communication:
+    image: dadarek/wait-for-dependencies
+    depends_on:
+      - zookeeper
+      - kafka
+      - influxdb
+      - grafana
+      - telegraf
+    command: kafka:9092
+    networks:
+      - dronazone-network
+      - monitoring
+
 networks:
   dronazone-network:
     driver: bridge
