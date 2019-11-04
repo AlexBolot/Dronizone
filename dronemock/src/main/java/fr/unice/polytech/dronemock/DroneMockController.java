@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.dronemock.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -18,9 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
-
-import static fr.unice.polytech.dronemock.models.DeliveryStatus.DELIVERING;
-import static fr.unice.polytech.dronemock.models.DeliveryStatus.PICKING_UP;
 
 @RestController
 @RequestMapping(path = "/commands", produces = "application/json")

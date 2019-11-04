@@ -9,7 +9,6 @@ import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
 import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
 import fr.unice.polytech.codemara.drone.entities.command.InitCommand;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
-import fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryUpdateDTO;
 import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
@@ -24,6 +23,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
+
+import static fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus.PICKING_UP;
 
 @RestController
 @RequestMapping(path = "/drone", produces = "application/json")
@@ -187,11 +188,11 @@ public class DroneController {
         logger.info("Drones has pickup delivery : {}", message);
         try {
             DeliveryUpdateDTO deliveryUpdate = new ObjectMapper().readValue(message, DeliveryUpdateDTO.class);
-            switch (deliveryUpdate.getUpdateType()) {
-                case DeliveryStatus.DELIVERED:
+            switch (deliveryUpdate.getDeliveryStatus()) {
+                case DELIVERED:
                     handleDeliveredOrder(deliveryUpdate);
                     break;
-                case DeliveryStatus.PICKING_UP:
+                case PICKING_UP:
                     handlePickingDeliveryOrder(deliveryUpdate);
                     break;
             }
@@ -214,7 +215,7 @@ public class DroneController {
         Optional<Drone> result = droneRepository.findById(update.getDroneId());
         result.ifPresent(drone -> {
             Delivery currentDelivery = drone.getCurrentDelivery();
-            currentDelivery.setPicked_up(deliveryUpdate.getDeliveryStatus() == DeliveryStatus.PICKING_UP);
+            currentDelivery.setPicked_up(update.getDeliveryStatus() == PICKING_UP);
         });
     }
 }
