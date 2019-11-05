@@ -210,6 +210,8 @@ services:
   zookeeper:
     image: wurstmeister/zookeeper
     container_name: zookeeper
+    expose:
+      - 2181
     ports:
       - 2181:2181
     networks:
