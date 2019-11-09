@@ -30,7 +30,7 @@ public class StatisticsServiceApplicationTests {
     }
 
     @ClassRule
-    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "orders");
+    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "order-packed", "order-delivered");
 
     @BeforeClass
     public static void beforeAll() {
@@ -39,7 +39,6 @@ public class StatisticsServiceApplicationTests {
                 rule.getEmbeddedKafka().getBrokersAsString());
 
     }
-
 
 
 }
