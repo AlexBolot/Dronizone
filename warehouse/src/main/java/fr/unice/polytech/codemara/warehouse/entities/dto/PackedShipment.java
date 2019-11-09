@@ -3,22 +3,21 @@ package fr.unice.polytech.codemara.warehouse.entities.dto;
 import fr.unice.polytech.codemara.warehouse.entities.Location;
 import lombok.*;
 
+import java.util.List;
+
 @Data
 @EqualsAndHashCode
 @ToString
-@AllArgsConstructor
 @NoArgsConstructor
-public class CustomerOrder {
+@AllArgsConstructor
+public class PackedShipment {
 
-    private int orderId;
+    private Location pickupLocation;
 
-    private int itemId;
+    private List<PackedOrder> orders;
 
-    private int customerId;
-
-    private Location deliveryLocation;
-
-    private double weight;
+    private double shipmentWeight;
 
     private long timestamp;
+
 }

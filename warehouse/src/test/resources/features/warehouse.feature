@@ -7,8 +7,9 @@ Feature: PendingDispatchListing
 
   Scenario: Klaus set an order ready to be delivered
     Given A basic order list
-    When Klaus sets a query ready for delivery
-    Then The event to request a drone is send
+    When Klaus just finish packing one item
+    And Klaus finish packing another item
+    Then Klaus decide to send the two item inside one shipment
 
   Scenario: A new order is created
     Given A basic order list

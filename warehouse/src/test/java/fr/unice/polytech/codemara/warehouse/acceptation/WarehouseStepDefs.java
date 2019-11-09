@@ -82,7 +82,7 @@ public class WarehouseStepDefs {
         for (int i = 0; i < parcels.size(); i++) {
             parcels.get(i).setItemId(i);
             parcels.get(i).setCustomerId(i);
-            parcels.get(i).setDeliveryLocation(new Location(i, i));
+//            parcels.get(i).setDeliveryLocation(new Location(i, i));
             parcels.get(i).setStatus(ParcelStatus.PENDING);
             parcelRepository.save(parcels.get(i));
         }
@@ -171,7 +171,7 @@ public class WarehouseStepDefs {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
                 .andExpect(status().isOk()).andReturn();
 
-        CustomerOrder customerOrder = new CustomerOrder(88, 69, 420, new Location(10, 10), System.currentTimeMillis());
+        CustomerOrder customerOrder = new CustomerOrder(88, 69, 420, new Location(10, 10), 5.5, System.currentTimeMillis());
         context.kafkaTemplate.send("order-create", new ObjectMapper().writeValueAsString(customerOrder));
     }
 
@@ -188,5 +188,17 @@ public class WarehouseStepDefs {
         int newSize = new ObjectMapper().readValue(this.mvcResult.getResponse().getContentAsString(), List.class).size();
 
         assertEquals(oldSize + 1, newSize);
+    }
+
+    @When("Klaus just finish packing one item")
+    public void klausJustFinishPackingOneItem() {
+    }
+
+    @And("Klaus finish packing another item")
+    public void klausFinishPackingAnotherItem() {
+    }
+
+    @Then("Klaus decide to send the two item inside one shipment")
+    public void klausDecideToSendTheTwoItemInsideOneShipment() {
     }
 }

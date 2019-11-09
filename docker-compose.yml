@@ -20,13 +20,13 @@ services:
     logging:
       driver: json-file
     depends_on:
-      - postgres-warehouse
+      - postgres
       - kafka
       - kafka-awaiter
     links:
-      - postgres-warehouse
+      - postgres
     environment:
-      DATASOURCE_HOST: postgres-warehouse
+      DATASOURCE_HOST: postgres
       NOTIFICATION_HOST: notification
       DRONE_HOST: http://drone-server:8080
       KAFKA_HOST: http://kafka
@@ -50,17 +50,17 @@ services:
     logging:
       driver: json-file
     environment:
-      DATASOURCE_HOST: postgres-order
+      DATASOURCE_HOST: postgres
       NOTIFY_HOST: http://notification:8080
       DATASOURCE_USERNAME: dronazone
       DATASOURCE_PWD: dronazone
       WAREHOUSE_HOST: http://warehouse-server:8080
       KAFKA_HOST: http://kafka
     depends_on:
-      - postgres-order
+      - postgres
       - kafka
     links:
-      - postgres-order
+      - postgres
 
 ############  DRONE  #################
 
@@ -81,18 +81,18 @@ services:
     logging:
       driver: json-file
     environment:
-      DATASOURCE_HOST: postgres-drone
+      DATASOURCE_HOST: postgres
       NOTIFICATION_HOST: notification
       KAFKA_HOST: http://kafka
       ORDER_SERVICE_HOST: http://order-server:8080
       EXTERNAL_DRONE_HOST: http://drone-mock
 
     depends_on:
-      - postgres-drone
+      - postgres
       #      - drone-mock
       - kafka
     links:
-      - postgres-drone
+      - postgres
 
 ##########  STATISTICS  ###############
 
@@ -122,8 +122,8 @@ services:
       - influxdb
   ############  POSTGRES  #################
 
-  postgres-order:
-    container_name: postgres-dronazone-order
+  postgres:
+    container_name: postgres-dronazone
     image: postgres
     environment:
       POSTGRES_PASSWORD: dronazone
@@ -131,33 +131,10 @@ services:
       POSTGRES_DB: dronazone
     networks:
       - dronazone-network
-#    expose:
-#      - 9000
-#    ports:
-#      - 9000:5432
-  postgres-warehouse:
-    container_name: postgres-dronazone-warehouse
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-
-    networks:
-      - dronazone-network
-  postgres-drone:
-    container_name: postgres-dronazone-drone
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-#    expose:
-#      - 9001
-#    ports:
-#      - 9001:5432
-    networks:
-      - dronazone-network
+    expose:
+      - 9000
+    ports:
+      - 9000:5432
 
   ############  NOTIFICATION  #################
 
@@ -224,8 +201,8 @@ services:
     depends_on:
       - zookeeper
     environment:
-      #      KAFKA_ADVERTISED_HOST_NAME: localhost
-      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+#      KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "drone-status:1:1,drone-commands:1:1,drone-delivery-update:1:1,order-create:1:1,order-delivered:1:1,order-cancelled:1:1,order-soon:1:1,order-packed:1:1"
     networks:

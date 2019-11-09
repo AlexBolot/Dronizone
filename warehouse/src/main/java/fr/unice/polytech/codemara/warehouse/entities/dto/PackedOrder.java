@@ -10,10 +10,11 @@ import lombok.*;
 @NoArgsConstructor
 public class PackedOrder {
 
-    int orderId;
-    String status;
-    int customerId;
-    Location deliveryLocation;
-    Location pickupLocation;
-    long timestamp;
+    private int orderId;
+
+    private String status;
+
+    private int customerId;
+
+    private Location deliveryLocation;
 }

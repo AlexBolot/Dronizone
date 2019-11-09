@@ -2,20 +2,30 @@ package fr.unice.polytech.codemara.warehouse.entities;
 
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
-//@Entity
+@Entity
 @Data
 @EqualsAndHashCode
 @ToString
-@AllArgsConstructor
 @NoArgsConstructor
 public class Shipment {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.TABLE)
+    private int shipmentId;
+
+    @OneToMany(fetch = FetchType.EAGER)
     private List<Parcel> parcels;
 
+    @Embedded
     private Location pickUpLocation;
+
+    public Shipment(Location pickUpLocation) {
+        this.pickUpLocation = pickUpLocation;
+        this.parcels = new ArrayList<>();
+    }
 
 }
