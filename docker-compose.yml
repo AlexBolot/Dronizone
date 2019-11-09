@@ -218,7 +218,7 @@ services:
     image: wurstmeister/kafka
     container_name: kafka
     expose:
-      - 9092crediramaService.getContract(accountKey)
+      - 9092
     ports:
       - 9092:9092
     depends_on:

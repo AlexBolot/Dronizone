@@ -175,6 +175,7 @@ public class WarehouseStepDefs {
         context.kafkaTemplate.send("order-create", new ObjectMapper().writeValueAsString(customerOrder));
     }
 
+
     @Then("The orders list is bigger")
     public void theOrdersListIsBigger() throws Exception {
         Thread.sleep(1000);
