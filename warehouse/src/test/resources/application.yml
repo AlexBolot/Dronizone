@@ -15,6 +15,7 @@ spring:
       drone-delivery-update: drone-delivery-update
       order-delivered: order-delivered
       order-packed: order-packed
+      shipment-packed: shipment-packed
       order-soon: order-soon
       order-cancelled: order-cancelled
     consumer:

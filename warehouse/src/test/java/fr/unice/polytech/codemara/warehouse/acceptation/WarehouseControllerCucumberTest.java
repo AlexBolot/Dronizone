@@ -20,6 +20,7 @@ public class WarehouseControllerCucumberTest {
             "drone-commands",
             "drone-delivery-update",
             "order-delivered",
+            "shipment-delivered",
             "order-packed",
             "order-cancelled",
             "order-soon");
