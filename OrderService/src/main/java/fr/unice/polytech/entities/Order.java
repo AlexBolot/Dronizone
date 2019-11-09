@@ -1,9 +1,6 @@
 package fr.unice.polytech.entities;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import javax.persistence.*;
 
@@ -12,6 +9,7 @@ import javax.persistence.*;
 @ToString
 @EqualsAndHashCode
 @Entity
+@NoArgsConstructor
 @Table(name = "order_item")
 public class Order {
 
@@ -25,10 +23,8 @@ public class Order {
     private Status status;
     @OneToOne
     private Customer customer;
-    private String paymentInfo;
 
-    public Order() {
-    }
+    private String paymentInfo;
 
     public Order(Coord coord, Item item, Status status, Customer customer, String paymentInfo) {
         this.coord = coord;

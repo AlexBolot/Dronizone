@@ -88,7 +88,7 @@ public class OrderNotificationStepDefs {
 
     @Given("^Bad weather forecast$")
     public void setMock() {
-        item = new Item("Persona 5");
+        item = new Item("Persona 5", 5.5);
         itemRepo.save(item);
         customer = new Customer("Roger", "Regor");
         customerRepo.save(customer);

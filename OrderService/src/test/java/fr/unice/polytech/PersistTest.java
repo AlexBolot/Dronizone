@@ -43,14 +43,14 @@ public class PersistTest {
 
     @Test
     public void itemTest() {
-        Item item = new Item("Persona 5");
+        Item item = new Item("Persona 5", 5.5);
         itemRepo.save(item);
         assertEquals(item, itemRepo.findItemById(item.getId()));
     }
 
     @Test
     public void orderTest() {
-        Item item = new Item("Persona 5");
+        Item item = new Item("Persona 5", 5.5);
         Customer customer = new Customer("Doe", "John");
         Order order = new Order(new Coord("0", "0"), item, Status.PENDING, customer, "bla bla");
         orderRepo.save(order);

@@ -201,10 +201,10 @@ services:
     depends_on:
       - zookeeper
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
-#      KAFKA_ADVERTISED_HOST_NAME: kafka
+#      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "drone-status:1:1,drone-commands:1:1,drone-delivery-update:1:1,order-create:1:1,order-delivered:1:1,order-cancelled:1:1,order-soon:1:1,order-packed:1:1"
+      KAFKA_CREATE_TOPICS: "drone-status:1:1,drone-commands:1:1,drone-delivery-update:1:1,order-create:1:1,order-delivered:1:1,order-cancelled:1:1,order-soon:1:1,order-packed:1:1,shipment-packed:1:1"
     networks:
       - dronazone-network
 

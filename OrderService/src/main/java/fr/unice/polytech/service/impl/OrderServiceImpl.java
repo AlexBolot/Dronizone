@@ -60,6 +60,7 @@ public class OrderServiceImpl implements OrderService {
         Map<String, Object> params = new HashMap<>();
         params.put("orderId", order.getId().toString());
         params.put("itemId", order.getItem().getId().toString());
+        params.put("weight", order.getItem().getWeight());
         params.put("customerId", order.getCustomer().getId().toString());
 
         Map<String, Object> location = new HashMap<>();

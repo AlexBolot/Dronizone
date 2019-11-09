@@ -105,7 +105,7 @@ public class OrderStepDefs {
 
     @Given("^An Item and the client information$")
     public void setupItemAndCustomer() {
-        item = new Item("Persona 5");
+        item = new Item("Persona 5", 5.5);
         customer = new Customer("Roger", "Regor");
     }
 
@@ -157,6 +157,7 @@ public class OrderStepDefs {
         requestCoord.addProperty("lon", order.getCoord().getLon());
         JsonObject requestItem = new JsonObject();
         requestItem.addProperty("name", item.getName());
+        requestItem.addProperty("weight", item.getWeight());
         JsonObject requestCustomer = new JsonObject();
         requestCustomer.addProperty("name", customer.getName());
         requestCustomer.addProperty("firstName", customer.getFirstName());
@@ -200,7 +201,7 @@ public class OrderStepDefs {
 
     @Given("^A drone with a client delivery$")
     public void setNotificationMock() throws JsonProcessingException, InterruptedException {
-        item = new Item("Persona 5");
+        item = new Item("Persona 5", 5.5);
         itemRepo.save(item);
         customer = new Customer("Roger", "Regor");
         customerRepo.save(customer);

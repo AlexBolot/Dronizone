@@ -21,12 +21,14 @@ public class Item {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Integer id;
     private String name;
+    private double weight;
 
     public Item() {
     }
 
-    public Item(String name) {
+    public Item(String name, double weight) {
         this.name = name;
+        this.weight = weight;
     }
 
 }
