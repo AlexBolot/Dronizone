@@ -20,9 +20,9 @@ import java.util.Map;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 
-@ActiveProfiles("test")
-@RunWith(SpringRunner.class)
-@SpringBootTest
+//@ActiveProfiles("test")
+//@RunWith(SpringRunner.class)
+//@SpringBootTest
 public class RegisterStatStepDefs {
     @MockBean
     InfluxDB influxDB = mock(InfluxDB.class);

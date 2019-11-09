@@ -8,7 +8,7 @@ import org.junit.runner.RunWith;
 import org.springframework.kafka.test.rule.EmbeddedKafkaRule;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles("test")
+//@ActiveProfiles("test")
 @RunWith(Cucumber.class)
 @CucumberOptions(features = "src/test/resources/features", plugin = {"pretty", "json:target/cucumber-report.json"})
 public class StatServiceControllerCucumberTest {
