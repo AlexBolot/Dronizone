@@ -176,7 +176,6 @@ public class WarehouseStepDefs {
     }
 
     @Then("The orders list is bigger")
-    @Ignore
     public void theOrdersListIsBigger() throws Exception {
         Thread.sleep(1000);
         int oldSize = new ObjectMapper().readValue(this.mvcResult.getResponse().getContentAsString(), List.class).size();
