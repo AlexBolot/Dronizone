@@ -7,7 +7,6 @@ import fr.unice.polytech.repo.CustomerRepo;
 import fr.unice.polytech.repo.ItemRepo;
 import fr.unice.polytech.repo.OrderRepo;
 import gherkin.deps.com.google.gson.JsonElement;
-import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -126,7 +125,7 @@ public class OrderNotificationStepDefs {
         System.setProperty("NOTIFY_HOST", "http://localhost:2000");
     }
 
-    @When("^Drone is cancel by fleet manager$")
+    @When("^Drone is canceled by fleet manager$")
     public void setCancelRequest() throws Exception {
         Map<String, Object> params = new HashMap<>();
         params.put("orderId", order.getId());
