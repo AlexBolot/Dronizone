@@ -11,14 +11,12 @@ matrix:
 notifications:
   slack: informatiquep-kyw7477:lC8s8YdlUaOFLThMaw7UGben
 script:
-  - MAVEN_OPTS=-Dorg.slf4j.simpleLogger.defaultLogLevel=WARN
-  - mvn install -q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
+  - mvn clean verify sonar:sonar -Pcoverage -Dsonar.host.url=http://sonar.galles.io -q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN
   - cd mock_notification_service
-  - mvn clean install -q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN
+  - mvn clean install -q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN > /dev/null
   - cd ../
   - cd dronemock
-  - mvn clean install -q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN
+  - mvn clean install -q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN > /dev/null
   - cd ../
   - docker-compose up -d --build
   - docker-compose down
-  - mvn clean verify sonar:sonar -Pcoverage -Dsonar.host.url=http://sonar.galles.io-q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN
