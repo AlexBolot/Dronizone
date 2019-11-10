@@ -157,7 +157,7 @@ public class ServiceMockStepDefs {
     @Then("A delivery command is sent to an available drone")
     public void aDeliveryCommandIsSentToAnAvailableDrone() throws InterruptedException {
         DeliveryCommand deliveryCommand = new DeliveryCommand(this.context.currentDrone,
-                deliveryRepository.findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
+                deliveryRepository.findByOrderId(this.context.currentDelivery.getOrderId()));
 
         List<ConsumerRecord<String, String>> received = new ArrayList<>();
         droneRecords.drainTo(received);

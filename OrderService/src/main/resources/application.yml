@@ -6,6 +6,6 @@ spring:
   batch:
     initialize-schema: always
   kafka:
-    bootstrap-servers: ${KAFKA_HOST}:9092
+    bootstrap-servers: ${KAFKA_HOST}
     consumer:
       group-id: order-service

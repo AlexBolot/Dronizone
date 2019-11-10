@@ -13,7 +13,6 @@ public class Delivery {
     @GeneratedValue
     private long id;
     private long orderId;
-    private long itemId;
     @Embedded
     @AttributeOverrides(value = {
             @AttributeOverride(name = "latitude", column = @Column(name = "latitude_pickup")),

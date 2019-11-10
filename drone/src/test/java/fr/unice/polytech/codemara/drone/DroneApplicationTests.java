@@ -170,7 +170,6 @@ public class DroneApplicationTests {
 
         Delivery currentDelivery = new Delivery();
         currentDelivery.setOrderId(orderId);
-        currentDelivery.setItemId(itemId);
         currentDelivery.setTarget_location(new Location(45, 7));
         currentDelivery.setPickup_location(new Location(45, 7.5));
         deliveryRepository.save(currentDelivery);

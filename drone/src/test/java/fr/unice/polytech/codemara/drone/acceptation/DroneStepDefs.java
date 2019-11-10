@@ -103,7 +103,6 @@ public class DroneStepDefs {
     public void klausRequiresADelivery() throws Exception {
         DeliveryDTO deliveryDTO = new DeliveryDTO(1, "", new Location(10, 10), new Location(11, 11), System.currentTimeMillis());
         Delivery test_delivery = new Delivery();
-        test_delivery.setItemId(1);
         test_delivery.setOrderId(1);
         test_delivery.setPickup_location(new Location(10, 10));
         test_delivery.setTarget_location(new Location(11, 11));
@@ -115,7 +114,7 @@ public class DroneStepDefs {
 
     @And("The sent delivery is registered")
     public void theSentDeliveryIsRegistered() {
-        assertNotNull(deliveryRepository.findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
+        assertNotNull(deliveryRepository.findByOrderId(this.context.currentDelivery.getOrderId()));
     }
 
 
@@ -127,7 +126,6 @@ public class DroneStepDefs {
             Delivery delivery = new Delivery();
             delivery.setTarget_location(new Location(10, 10));
             delivery.setPickup_location(new Location(11, 11));
-            delivery.setItemId(i);
             delivery.setOrderId(i);
             deliveryRepository.save(delivery);
             drone.currentDelivery = delivery;
