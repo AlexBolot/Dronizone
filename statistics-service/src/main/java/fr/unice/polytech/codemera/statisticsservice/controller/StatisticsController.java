@@ -8,6 +8,7 @@ import org.influxdb.InfluxDB;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Query;
 import org.influxdb.impl.InfluxDBResultMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,12 +26,8 @@ public class StatisticsController {
     private static final String ORDER_ID_TAG_NAME = "orderID";
     private static final String ORDER_STATUS_TAG_NAME = "orderStatus";
 
-    private final InfluxDB influxDB;
-
-    public StatisticsController(InfluxDB influxDB) {
-        System.out.println("hello i'm up ");
-        this.influxDB = influxDB;
-    }
+    @Autowired
+    private InfluxDB influxDB;
 
 
     @KafkaListener(topics = ORDER_PACKED)
@@ -65,7 +62,7 @@ public class StatisticsController {
 
     @GetMapping("/test")
     public String testinflux() {
-        Query query = new Query("Select * from test", "dronazone");
+        Query query = new Query("Select * from orders", "dronazone");
         InfluxDBResultMapper resultMapper = new InfluxDBResultMapper();
         List<Statistics> statisticsList = resultMapper
                 .toPOJO(influxDB.query(query), Statistics.class);

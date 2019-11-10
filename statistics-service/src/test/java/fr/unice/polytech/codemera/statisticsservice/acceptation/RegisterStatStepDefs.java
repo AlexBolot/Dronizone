@@ -30,9 +30,9 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
-@ActiveProfiles("test")
-@RunWith(SpringRunner.class)
-@SpringBootTest
+//@ActiveProfiles("test")
+//@RunWith(SpringRunner.class)
+//@SpringBootTest
 public class RegisterStatStepDefs {
     @MockBean
     InfluxDB influxDB = mock(InfluxDB.class);
