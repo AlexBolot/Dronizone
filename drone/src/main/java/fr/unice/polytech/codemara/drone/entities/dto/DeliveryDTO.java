@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 public class DeliveryDTO {
     private long orderId;
     private long itemId;
-    private Location pickup_location;
-    private Location target_location;
-    private boolean notified = false;
+    private String status;
+    private Location pickupLocation;
+    private Location targetLocation;
+    private long timestamps;
 }

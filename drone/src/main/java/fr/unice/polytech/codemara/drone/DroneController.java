@@ -117,8 +117,8 @@ public class DroneController {
         try {
             DeliveryDTO deliveryDTO = new ObjectMapper().readValue(message, DeliveryDTO.class);
             Delivery delivery = new Delivery();
-            delivery.setPickup_location(deliveryDTO.getPickup_location());
-            delivery.setTarget_location(deliveryDTO.getTarget_location());
+            delivery.setPickup_location(deliveryDTO.getPickupLocation());
+            delivery.setTarget_location(deliveryDTO.getTargetLocation());
             delivery.setItemId(deliveryDTO.getItemId());
             delivery.setOrderId(deliveryDTO.getOrderId());
             deliveryRepository.save(delivery);
@@ -151,7 +151,7 @@ public class DroneController {
         logger.info(message);
         try {
             DroneState state = new ObjectMapper().readValue(message, DroneState.class);
-            Optional<Drone> result = droneRepository.findById(state.getDrone_id());
+            Optional<Drone> result = droneRepository.findById(state.getDroneID());
 
             logger.info(result.toString());
 
@@ -171,13 +171,13 @@ public class DroneController {
                 }
             });
 
-            if (state.getDrone_id() < 0) {
+            if (state.getDroneID() < 0) {
                 Drone oldDrone = new Drone();
                 oldDrone.setDroneStatus(state.getDroneStatus());
-                oldDrone.setBatteryLevel(state.getBattery());
+                oldDrone.setBatteryLevel(state.getBattery_level());
                 oldDrone.setWhereabouts(whereaboutsRepository.save(state.getWhereabouts()));
                 long newId = droneRepository.save(oldDrone).getDroneID();
-                oldDrone.setDroneID(state.getDrone_id());
+                oldDrone.setDroneID(state.getDroneID());
                 DroneCommand initCommand = new InitCommand(oldDrone, newId);
                 droneCommander.sendCommand(initCommand);
             }
