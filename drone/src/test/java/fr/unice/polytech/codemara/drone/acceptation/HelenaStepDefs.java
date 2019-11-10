@@ -40,9 +40,7 @@ public class HelenaStepDefs {
         ObjectNode jsonNode = new ObjectMapper().readValue(body, ObjectNode.class);
 
         ArrayList<Double> batteryLevels = new ArrayList<>();
-        jsonNode.elements().forEachRemaining(element -> {
-            batteryLevels.add(element.asDouble());
-        });
+        jsonNode.elements().forEachRemaining(element -> batteryLevels.add(element.asDouble()));
 
         Assert.assertEquals(15, batteryLevels.size());
     }

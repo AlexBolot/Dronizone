@@ -17,5 +17,6 @@ spring:
       order-packed: order-packed
       order-soon: order-soon
       order-cancelled: order-cancelled
+      shipment-refused : shipment-refused
     consumer:
       group-id: test

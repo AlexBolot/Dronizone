@@ -19,7 +19,6 @@ import java.util.Map;
  */
 public class DroneCommander {
 
-
     @Autowired
     private DroneRepository droneRepository;
 
@@ -40,7 +39,6 @@ public class DroneCommander {
      * @param command {@link DroneCommand}
      */
     public void sendCommand(DroneCommand command) {
-
         try {
             Map<String, Object> params = new HashMap<>();
             params.put("command", command.getCommand().toString());
@@ -49,7 +47,6 @@ public class DroneCommander {
             kafkaTemplate.send("drone-commands", new ObjectMapper().writeValueAsString(command));
         } catch (JsonProcessingException e) {
             logger.error("DroneCommander.sendcommand", e);
-
         }
     }
 

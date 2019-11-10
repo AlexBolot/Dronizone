@@ -19,7 +19,8 @@ public class DroneServiceControllerCucumberTest {
             "order-delivered",
             "order-packed",
             "order-cancelled",
-            "order-soon");
+            "order-soon",
+            "shipment-refused");
     @BeforeClass
     public static void beforeAll(){
         System.out.println("broker in the cucumber runner " + rule.getEmbeddedKafka().getBrokersAsString());

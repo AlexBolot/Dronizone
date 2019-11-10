@@ -1,17 +1,22 @@
 package fr.unice.polytech.codemara.drone.entities.dto;
 
+import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.Location;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
-@NoArgsConstructor
+@EqualsAndHashCode
+@ToString
 @AllArgsConstructor
+@NoArgsConstructor
 public class DeliveryDTO {
     private long orderId;
-    private long itemId;
-    private Location pickup_location;
-    private Location target_location;
-    private boolean notified = false;
+    private String status;
+    private Location deliveryLocation;
+
+    public DeliveryDTO(Delivery delivery) {
+        orderId = delivery.getOrderId();
+        status = delivery.getStatus().name();
+        deliveryLocation = delivery.getDeliveryLocation();
+    }
 }

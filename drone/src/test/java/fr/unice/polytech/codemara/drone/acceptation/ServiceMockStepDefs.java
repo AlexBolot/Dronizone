@@ -1,15 +1,17 @@
 package fr.unice.polytech.codemara.drone.acceptation;
 
 import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
-import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.Drone;
-import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
+import fr.unice.polytech.codemara.drone.entities.Shipment;
 import fr.unice.polytech.codemara.drone.entities.command.InitCommand;
+import fr.unice.polytech.codemara.drone.entities.command.ShipmentCommand;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
+import fr.unice.polytech.codemara.drone.repositories.ShipmentRepository;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.junit.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
@@ -19,6 +21,7 @@ import org.springframework.kafka.test.utils.ContainerTestUtils;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -43,11 +46,13 @@ public class ServiceMockStepDefs {
     private DeliveryRepository deliveryRepository;
 
     @Autowired
+    private ShipmentRepository shipmentRepository;
+
+    @Autowired
     private DroneCommander droneCommander;
 
     private BlockingQueue<ConsumerRecord<String, String>> orderRecords;
     private BlockingQueue<ConsumerRecord<String, String>> droneRecords;
-
 
     @And("A mocked Order Service")
     public void aMockedOrderService() {
@@ -126,20 +131,12 @@ public class ServiceMockStepDefs {
         orderRecords.drainTo(received);
         List<String> actual = received.stream().map(ConsumerRecord::value).collect(Collectors.toList());
 
-        int notifiCount = 0;
-
-        for (Delivery delivery : deliveryRepository.findAll()) {
-            notifiCount++;
-        }
-
-        assertEquals(notifiCount, actual.size());
+        assertEquals(deliveryRepository.count(), actual.size());
     }
 
-
     @Then("A Callback Command is Issued for all drones")
-    public void aCallbackCommandIsIssuedForAllDrones() throws InterruptedException {
+    public void aCallbackCommandIsIssuedForAllDrones() {
         int commandSend = 0;
-
 
         for (Drone drone : droneRepository.findAll()) {
             drone.setDroneStatus(CALLED_HOME);
@@ -155,22 +152,31 @@ public class ServiceMockStepDefs {
     }
 
     @Then("A delivery command is sent to an available drone")
-    public void aDeliveryCommandIsSentToAnAvailableDrone() throws InterruptedException {
-        DeliveryCommand deliveryCommand = new DeliveryCommand(this.context.currentDrone,
-                deliveryRepository.findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
+    public void aDeliveryCommandIsSentToAnAvailableDrone() {
+        try {
+            Shipment shipment = this.context.currentShipment;
+            shipment.setDeliveries(Collections.singletonList(this.context.currentDelivery));
 
-        List<ConsumerRecord<String, String>> received = new ArrayList<>();
-        droneRecords.drainTo(received);
-        this.droneCommander.sendCommand(deliveryCommand);
+            ShipmentCommand shipmentCommand = new ShipmentCommand(this.context.currentDrone, shipment);
 
+            List<ConsumerRecord<String, String>> received = new ArrayList<>();
+            droneRecords.drainTo(received);
 
-        received = new ArrayList<>();
-        ConsumerRecord<String, String> poll = droneRecords.poll(1, TimeUnit.SECONDS);
-        if (poll != null)
-            received.add(poll);
-        droneRecords.drainTo(received);
-        List<String> actual = received.stream().map(ConsumerRecord::value).collect(Collectors.toList());
-        assertEquals(1, actual.size());
+            this.droneCommander.sendCommand(shipmentCommand);
+
+            received = new ArrayList<>();
+            ConsumerRecord<String, String> poll = droneRecords.poll(1, TimeUnit.SECONDS);
+            if (poll != null)
+                received.add(poll);
+
+            droneRecords.drainTo(received);
+            List<String> actual = received.stream().map(ConsumerRecord::value).collect(Collectors.toList());
+
+            assertEquals(1, actual.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
     }
 
     @And("A Drone initialization command is sent to the drone")
@@ -201,7 +207,7 @@ public class ServiceMockStepDefs {
     }
 
     @And("A pause of {int} seconds")
-    public void aPauseOfSeconds(int arg0) throws InterruptedException {
-        Thread.sleep(arg0 * 1000);
+    public void aPauseOfSeconds(int seconds) throws InterruptedException {
+        Thread.sleep(seconds * 1000);
     }
 }

@@ -3,11 +3,11 @@ package fr.unice.polytech.codemara.drone;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
-import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.Drone;
 import fr.unice.polytech.codemara.drone.entities.Location;
 import fr.unice.polytech.codemara.drone.entities.command.CallbackCommand;
 import fr.unice.polytech.codemara.drone.entities.command.InitCommand;
+import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryUpdateDTO;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
@@ -170,9 +170,8 @@ public class DroneApplicationTests {
 
         Delivery currentDelivery = new Delivery();
         currentDelivery.setOrderId(orderId);
-        currentDelivery.setItemId(itemId);
-        currentDelivery.setTarget_location(new Location(45, 7));
-        currentDelivery.setPickup_location(new Location(45, 7.5));
+        currentDelivery.setDeliveryLocation(new Location(45, 7));
+        //currentDelivery.setPickup_location(new Location(45, 7.5));
         deliveryRepository.save(currentDelivery);
         drone.setCurrentDelivery(currentDelivery);
         drone = droneRepository.save(drone);

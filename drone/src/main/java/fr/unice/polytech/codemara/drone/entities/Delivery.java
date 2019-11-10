@@ -1,31 +1,46 @@
 package fr.unice.polytech.codemara.drone.entities;
 
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
+import fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus;
+import lombok.*;
 
 import javax.persistence.*;
 
 @Data
+@EqualsAndHashCode
+@ToString
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
-@RequiredArgsConstructor
+@With
+@Embeddable
 public class Delivery {
+
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private long id;
+
     private long orderId;
-    private long itemId;
+
+    private DeliveryStatus status;
+
     @Embedded
     @AttributeOverrides(value = {
             @AttributeOverride(name = "latitude", column = @Column(name = "latitude_pickup")),
             @AttributeOverride(name = "longitude", column = @Column(name = "longitude_pickup"))
     })
-    private Location pickup_location;
-    @Embedded
-    private Location target_location;
+    private Location deliveryLocation;
+
     private boolean notified = false;
-    private boolean picked_up = false;
+    private boolean pickedUp = false;
+
+    public Delivery(DeliveryDTO dto) {
+        deliveryLocation = dto.getDeliveryLocation();
+        orderId = dto.getOrderId();
+        status = DeliveryStatus.valueOf(dto.getStatus());
+    }
 
     public boolean mustNotify() {
-        return !notified && picked_up;
+        return !notified && pickedUp;
     }
 }

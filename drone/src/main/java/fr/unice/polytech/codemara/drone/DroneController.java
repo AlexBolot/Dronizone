@@ -5,18 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.drone_service.DroneCommander;
 import fr.unice.polytech.codemara.drone.entities.*;
 import fr.unice.polytech.codemara.drone.entities.command.CallbackCommand;
-import fr.unice.polytech.codemara.drone.entities.command.DeliveryCommand;
 import fr.unice.polytech.codemara.drone.entities.command.DroneCommand;
 import fr.unice.polytech.codemara.drone.entities.command.InitCommand;
-import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
+import fr.unice.polytech.codemara.drone.entities.command.ShipmentCommand;
+import fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus;
 import fr.unice.polytech.codemara.drone.entities.dto.DeliveryUpdateDTO;
+import fr.unice.polytech.codemara.drone.entities.dto.ShipmentDTO;
+import fr.unice.polytech.codemara.drone.entities.dto.ShipmentRefusedDTO;
 import fr.unice.polytech.codemara.drone.order_service.OrderService;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
+import fr.unice.polytech.codemara.drone.repositories.ShipmentRepository;
 import fr.unice.polytech.codemara.drone.repositories.WhereaboutsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -24,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
 
+import static fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus.DELIVERED;
 import static fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus.PICKING_UP;
 
 @RestController
@@ -32,19 +37,23 @@ public class DroneController {
 
     private static final Logger logger = LoggerFactory.getLogger(DroneController.class);
 
+    private final KafkaTemplate kafkaTemplate;
     private final DroneCommander droneCommander;
     private final DroneRepository droneRepository;
     private final DeliveryRepository deliveryRepository;
+    private final ShipmentRepository shipmentRepository;
     private final OrderService orderService;
     private final WhereaboutsRepository whereaboutsRepository;
 
     private final Location baseLocation;
 
 
-    public DroneController(DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, OrderService orderService, WhereaboutsRepository whereaboutsRepository) {
+    public DroneController(KafkaTemplate kafkaTemplate, DroneCommander droneCommander, DroneRepository droneRepository, DeliveryRepository deliveryRepository, ShipmentRepository shipmentRepository, OrderService orderService, WhereaboutsRepository whereaboutsRepository) {
+        this.kafkaTemplate = kafkaTemplate;
         this.droneCommander = droneCommander;
         this.droneRepository = droneRepository;
         this.deliveryRepository = deliveryRepository;
+        this.shipmentRepository = shipmentRepository;
         this.orderService = orderService;
         this.whereaboutsRepository = whereaboutsRepository;
         this.baseLocation = new Location(45, 7);
@@ -62,9 +71,7 @@ public class DroneController {
         Iterable<Drone> drones = droneRepository.findAll();
         HashMap<Long, Double> levels = new HashMap<>();
         drones.forEach(d -> levels.put(d.getDroneID(), d.getBatteryLevel()));
-
         return new ObjectMapper().writeValueAsString(levels);
-
     }
 
     /**
@@ -90,13 +97,13 @@ public class DroneController {
     public void callbackFleet() {
         DroneCommand callbackCommand = new CallbackCommand(baseLocation);
         droneCommander.broadcast(callbackCommand);
-        Iterable<Delivery> deliveries = deliveryRepository.findAll();
-        deliveries.forEach(orderService::notifyDeliveryCancel);
+        Iterable<Shipment> shipments = shipmentRepository.findAll();
+        shipments.forEach(shipment -> shipment.getDeliveries().forEach(orderService::notifyDeliveryCancel));
     }
 
-    @GetMapping(path = "/deliveries")
-    public Iterable<Delivery> deliveries() {
-        return deliveryRepository.findAll();
+    @GetMapping(path = "/shipments")
+    public Iterable<Shipment> deliveries() {
+        return shipmentRepository.findAll();
     }
 
     @GetMapping(path = "/drones")
@@ -105,30 +112,35 @@ public class DroneController {
     }
 
     /**
-     * Method that listen if new Order are packed and ready to be picked up by an available drone we will choose
+     * Method that listen if new shipments are packed and ready to be picked up by an available drone we will choose
      *
      * @param message The delivery that the drone will go pick up and deliver to customer location
      */
-    @KafkaListener(topics = "order-packed")
-    public void newOrderPacked(String message) {
+    @KafkaListener(topics = "shipment-packed")
+    public void newShipmentPacked(String message) {
         logger.debug(message);
         try {
-            DeliveryDTO deliveryDTO = new ObjectMapper().readValue(message, DeliveryDTO.class);
-            Delivery delivery = new Delivery();
-            delivery.setPickup_location(deliveryDTO.getPickup_location());
-            delivery.setTarget_location(deliveryDTO.getTarget_location());
-            delivery.setItemId(deliveryDTO.getItemId());
-            delivery.setOrderId(deliveryDTO.getOrderId());
-            deliveryRepository.save(delivery);
+            ShipmentDTO shipmentDTO = new ObjectMapper().readValue(message, ShipmentDTO.class);
+            Shipment shipment = new Shipment(shipmentDTO);
+            shipment.getDeliveries().forEach(deliveryRepository::save);
+            shipmentRepository.save(shipment);
 
-            Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
-            Drone drone = null;
+            double weight = shipment.getShipmentWeight();
+
+            // Get available drones that can transport this delivery (maxWeight over delivery's weight)
+            Iterator<Drone> drones = droneRepository.getDronesByCurrentShipmentAndMaxWeightIsGreaterThan(null, weight).iterator();
             if (drones.hasNext()) {
-                drone = drones.next();
-                drone.setCurrentDelivery(delivery);
+                Drone drone = drones.next();
+                drone.setCurrentShipment(shipment);
+                drone.setCurrentDelivery(shipment.next());
                 droneRepository.save(drone);
-                DeliveryCommand deliveryCommand = new DeliveryCommand(drone, delivery);
-                droneCommander.sendCommand(deliveryCommand);
+                ShipmentCommand shipmentCommand = new ShipmentCommand(drone, shipment);
+                droneCommander.sendCommand(shipmentCommand);
+            } else {
+                String logMessage = "No drone is available for shipment of id " + shipment.getId();
+                logger.info("DroneController.newOrderPacked", logMessage);
+                ShipmentRefusedDTO dto = new ShipmentRefusedDTO(shipment);
+                kafkaTemplate.send("shipment-refused", new ObjectMapper().writeValueAsString(dto));
             }
         } catch (IOException e) {
             logger.error("DroneController.newOrderPacked", e);
@@ -150,9 +162,9 @@ public class DroneController {
             DroneState state = new ObjectMapper().readValue(message, DroneState.class);
             Optional<Drone> result = droneRepository.findById(state.getDrone_id());
 
-            logger.debug(result.toString());
-
             result.ifPresent(drone -> {
+                logger.debug(result.toString());
+
                 Delivery delivery = drone.getCurrentDelivery();
                 double distance = state.getWhereabouts().getDistanceToTarget();
 
@@ -188,14 +200,14 @@ public class DroneController {
         logger.info("Drones has pickup delivery : {}", message);
         try {
             DeliveryUpdateDTO deliveryUpdate = new ObjectMapper().readValue(message, DeliveryUpdateDTO.class);
-            switch (deliveryUpdate.getDeliveryStatus()) {
-                case DELIVERED:
-                    handleDeliveredOrder(deliveryUpdate);
-                    break;
-                case PICKING_UP:
-                    handlePickingDeliveryOrder(deliveryUpdate);
-                    break;
+            DeliveryStatus status = deliveryUpdate.getDeliveryStatus();
+
+            if (status == DELIVERED) {
+                handleDeliveredOrder(deliveryUpdate);
+            } else if (status == PICKING_UP) {
+                handlePickingDeliveryOrder(deliveryUpdate);
             }
+
         } catch (IOException e) {
             logger.error("DroneController.dronesPickupReceiver", e);
         }
@@ -210,12 +222,11 @@ public class DroneController {
         droneCommander.sendCommand(callHomeCommand);
     }
 
-
     private void handlePickingDeliveryOrder(DeliveryUpdateDTO update) {
         Optional<Drone> result = droneRepository.findById(update.getDroneId());
         result.ifPresent(drone -> {
             Delivery currentDelivery = drone.getCurrentDelivery();
-            currentDelivery.setPicked_up(update.getDeliveryStatus() == PICKING_UP);
+            currentDelivery.setPickedUp(update.getDeliveryStatus() == PICKING_UP);
         });
     }
 }

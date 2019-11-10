@@ -2,6 +2,7 @@ package fr.unice.polytech.codemara.drone.acceptation;
 
 import fr.unice.polytech.codemara.drone.entities.Delivery;
 import fr.unice.polytech.codemara.drone.entities.Drone;
+import fr.unice.polytech.codemara.drone.entities.Shipment;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -35,6 +36,7 @@ class IntegrationContext {
      * The current delivery, for one drone one delivery tests
      */
     Delivery currentDelivery;
+    Shipment currentShipment;
 
     /**
      * For one drone operation, freely assign to this drone
@@ -49,6 +51,7 @@ class IntegrationContext {
 
     KafkaMessageListenerContainer<String, String> orderContainer;
     KafkaMessageListenerContainer<String, String> droneContainer;
+    KafkaMessageListenerContainer<String, String> shipmentContainer;
 
 
     static IntegrationContext getInstance() {
