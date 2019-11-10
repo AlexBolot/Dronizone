@@ -2,6 +2,7 @@ spring:
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     topic:
-      orders: orders
+      order-delivered: order-delivered
+      order-packed: order-packed
     consumer:
-      group-id: test
+      group-id: stat-service

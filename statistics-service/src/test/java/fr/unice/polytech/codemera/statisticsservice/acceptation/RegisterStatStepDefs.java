@@ -1,13 +1,21 @@
 package fr.unice.polytech.codemera.statisticsservice.acceptation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.unice.polytech.codemera.statisticsservice.controller.StatisticsController;
+import fr.unice.polytech.codemera.statisticsservice.entities.Statistics;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.influxdb.InfluxDB;
+import org.influxdb.dto.Point;
+import org.influxdb.dto.Query;
+import org.influxdb.impl.InfluxDBResultMapper;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
@@ -15,38 +23,42 @@ import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
 
-@ActiveProfiles("test")
-@RunWith(SpringRunner.class)
-@SpringBootTest
+//@ActiveProfiles("test")
+//@RunWith(SpringRunner.class)
+//@SpringBootTest
 public class RegisterStatStepDefs {
     @MockBean
     InfluxDB influxDB = mock(InfluxDB.class);
 
     private KafkaTemplate kafkaTemplate;
 
+    private StatisticsController statisticsController;
+
     private int entries;
     private ArgumentCaptor<String> valueCapture;
 
     @Given("A command to be packed")
     public void aCommandToBePacked() {
-        valueCapture = ArgumentCaptor.forClass(String.class);
-        doNothing().when(influxDB).write(valueCapture.capture());
     }
 
     @When("Klaus packs the order")
-    public void klausPacksTheOrder() {
-        kafkaTemplate.send("order-packed", "{\"order_id\":1,\"status\":\"packed\"");
-
+    public void klausPacksTheOrder() throws InterruptedException {
+        this.kafkaTemplate.send("order-packed", "{\"order_id\":1,\"status\":\"order-packed\"");
+        System.out.println("------------------------------------Now waiting 2s");
+        Thread.sleep(2000);
+        System.out.println("-------------------I have waited.");
     }
 
     @Then("a new entry is registred in the database")
     public void aNewEntryIsRegistredInTheDatabase() {
-
+        verify(influxDB, times(1)).write(any(Point.class));
     }
 
     @Given("A command to be delivered")
@@ -54,7 +66,9 @@ public class RegisterStatStepDefs {
     }
 
     @When("the order is delivered")
-    public void theOrderIsDelivered() {
+    public void theOrderIsDelivered() throws InterruptedException {
+        kafkaTemplate.send("order-delivered", "{\"order_id\":1,\"status\":\"delivered\"");
+        Thread.sleep(1000);
     }
 
     @Given("A wired kafka template")
@@ -70,6 +84,9 @@ public class RegisterStatStepDefs {
 
         // create a Kafka template
         kafkaTemplate = new KafkaTemplate<>(producerFactory);
+
+        valueCapture = ArgumentCaptor.forClass(String.class);
+        doNothing().when(influxDB).write(valueCapture.capture());
 
     }
 }

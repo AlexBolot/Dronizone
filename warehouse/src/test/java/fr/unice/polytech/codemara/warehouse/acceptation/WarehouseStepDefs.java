@@ -188,5 +188,44 @@ public class WarehouseStepDefs {
         List<String> actual = received.stream().map(ConsumerRecord::value).collect(Collectors.toList());
         assertEquals(1, actual.size());
         assertEquals(packedShipment, new ObjectMapper().readValue(actual.get(0), PackedShipment.class));
+        assertEquals(packedOrder, new ObjectMapper().readValue(actual.get(0), PackedOrder.class));
+    }
+
+    @When("A new order has been created")
+    public void aNewOrderHasBeenCreated() throws Exception {
+        // set up the Kafka producer properties
+        Map<String, Object> senderProperties =
+                KafkaTestUtils.senderProps(
+                        System.getProperty("spring.kafka.bootstrap-servers"));
+
+        // create a Kafka producer factory
+        ProducerFactory<String, String> producerFactory =
+                new DefaultKafkaProducerFactory<>(
+                        senderProperties);
+
+        // create a Kafka template
+        context.kafkaTemplate = new KafkaTemplate<>(producerFactory);
+
+        this.mvcResult = this.mockMvc.perform(get("/warehouse/parcel"))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk()).andReturn();
+
+        CustomerOrder customerOrder = new CustomerOrder(88, 69, 420, new Location(10, 10), System.currentTimeMillis());
+        context.kafkaTemplate.send("order-create", new ObjectMapper().writeValueAsString(customerOrder));
+    }
+
+
+    @Then("The orders list is bigger")
+    public void theOrdersListIsBigger() throws Exception {
+        Thread.sleep(1000);
+        int oldSize = new ObjectMapper().readValue(this.mvcResult.getResponse().getContentAsString(), List.class).size();
+
+        this.mvcResult = this.mockMvc.perform(get("/warehouse/parcel"))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk()).andReturn();
+
+        int newSize = new ObjectMapper().readValue(this.mvcResult.getResponse().getContentAsString(), List.class).size();
+
+        assertEquals(oldSize + 1, newSize);
     }
 }
