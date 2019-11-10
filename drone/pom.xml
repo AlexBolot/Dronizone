@@ -23,6 +23,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <java.version>1.8</java.version>
+        <skipTests>false</skipTests>
     </properties>
 
     <dependencies>
@@ -83,7 +84,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <skipTests>false</skipTests>
+                            <skipTests>${skipTests}</skipTests>
                             <includes>
                                 <include>**/*Tests.java</include>
                             </includes>
@@ -96,7 +97,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <skipTests>false</skipTests>
+                            <skipTests>${skipTests}</skipTests>
                             <includes>
                                 <include>**/*IT.*</include>
                                 <include>**/*Test.*</include>

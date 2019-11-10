@@ -16,6 +16,7 @@ import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
 import fr.unice.polytech.codemara.drone.repositories.WhereaboutsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,7 @@ import static fr.unice.polytech.codemara.drone.entities.dto.DeliveryStatus.PICKI
 
 @RestController
 @RequestMapping(path = "/drone", produces = "application/json")
+@EnableKafka
 public class DroneController {
 
     private static final Logger logger = LoggerFactory.getLogger(DroneController.class);
@@ -109,9 +111,9 @@ public class DroneController {
      *
      * @param message The delivery that the drone will go pick up and deliver to customer location
      */
-    @KafkaListener(topics = "order-packed")
+    @KafkaListener(topics = "order-packed", groupId = "DroneControllerGroup")
     public void newOrderPacked(String message) {
-        logger.debug(message);
+        logger.info(message);
         try {
             DeliveryDTO deliveryDTO = new ObjectMapper().readValue(message, DeliveryDTO.class);
             Delivery delivery = new Delivery();
@@ -122,6 +124,7 @@ public class DroneController {
             deliveryRepository.save(delivery);
 
             Iterator<Drone> drones = droneRepository.getDroneByCurrentDelivery(null).iterator();
+            System.out.println("drones = " + drones.hasNext());
             Drone drone = null;
             if (drones.hasNext()) {
                 drone = drones.next();
@@ -143,14 +146,14 @@ public class DroneController {
      *
      * @param message The status that contain the whereabouts, the id, the battery level and a timestamp
      */
-    @KafkaListener(topics = "drone-status")
+    @KafkaListener(topics = "drone-status", groupId = "DroneControllerGroup")
     public void listenToDrones(String message) {
-        logger.debug(message);
+        logger.info(message);
         try {
             DroneState state = new ObjectMapper().readValue(message, DroneState.class);
             Optional<Drone> result = droneRepository.findById(state.getDrone_id());
 
-            logger.debug(result.toString());
+            logger.info(result.toString());
 
             result.ifPresent(drone -> {
                 Delivery delivery = drone.getCurrentDelivery();

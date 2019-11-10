@@ -12,7 +12,7 @@ public class Delivery {
     private long id;
     private long orderId;
     private long itemId;
-
+    private boolean picked_up = false;
     private Location pickup_location;
 
     private Location target_location;

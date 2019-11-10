@@ -46,7 +46,9 @@ public class DroneCommander {
             params.put("command", command.getCommand().toString());
             params.put("droneId", command.getTarget().getDroneID());
             params.put("payload", command.getPayload());
-            kafkaTemplate.send("drone-commands", new ObjectMapper().writeValueAsString(command));
+            String kafkaCommand = new ObjectMapper().writeValueAsString(command);
+            kafkaTemplate.send("drone-commands", kafkaCommand);
+            logger.info("sending command : {}", kafkaCommand);
         } catch (JsonProcessingException e) {
             logger.error("DroneCommander.sendcommand", e);
 

@@ -20,13 +20,10 @@ services:
     logging:
       driver: json-file
     depends_on:
-      - postgres-warehouse
       - kafka
       - kafka-awaiter
-    links:
-      - postgres-warehouse
+
     environment:
-      DATASOURCE_HOST: postgres-warehouse
       NOTIFICATION_HOST: notification
       DRONE_HOST: http://drone-server:8080
       KAFKA_HOST: http://kafka
@@ -57,10 +54,7 @@ services:
       WAREHOUSE_HOST: http://warehouse-server:8080
       KAFKA_HOST: http://kafka
     depends_on:
-      - postgres-order
       - kafka
-    links:
-      - postgres-order
 
 ############  DRONE  #################
 
@@ -75,24 +69,20 @@ services:
     expose:
       - 8083
     ports:
-      - 8083:8080
+      - 8083:8083
     networks:
       - dronazone-network
     logging:
       driver: json-file
     environment:
-      DATASOURCE_HOST: postgres-drone
       NOTIFICATION_HOST: notification
-      KAFKA_HOST: http://kafka
+      KAFKA_HOST: http://kafka:9092
       ORDER_SERVICE_HOST: http://order-server:8080
       EXTERNAL_DRONE_HOST: http://drone-mock
 
     depends_on:
-      - postgres-drone
       #      - drone-mock
       - kafka
-    links:
-      - postgres-drone
 
 ##########  STATISTICS  ###############
 
@@ -120,44 +110,6 @@ services:
     depends_on:
       - kafka
       - influxdb
-  ############  POSTGRES  #################
-
-  postgres-order:
-    container_name: postgres-dronazone-order
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-    networks:
-      - dronazone-network
-#    expose:
-#      - 9000
-#    ports:
-#      - 9000:5432
-  postgres-warehouse:
-    container_name: postgres-dronazone-warehouse
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-
-    networks:
-      - dronazone-network
-  postgres-drone:
-    container_name: postgres-dronazone-drone
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-#    expose:
-#      - 9001
-#    ports:
-#      - 9001:5432
-    networks:
-      - dronazone-network
 
   ############  NOTIFICATION  #################
 
@@ -203,13 +155,13 @@ services:
       driver: json-file
     environment:
       DRONE_SERVICE: http://drone-server:8080/
-      KAFKA_HOST: http://kafka
+      KAFKA_HOST: http://kafka:9092
 
   ############  KAFKA  #################
 
   zookeeper:
     image: wurstmeister/zookeeper
-    container_name: zookeeper
+    container_name: dronazone-zookeeper
     expose:
       - 2181
     ports:
@@ -218,16 +170,20 @@ services:
       - dronazone-network
   kafka:
     image: wurstmeister/kafka
-    container_name: kafka
+    container_name: dronazone-kafka
     expose:
       - 9092
     ports:
+      - 9094:9094
       - 9092:9092
     depends_on:
       - zookeeper
     environment:
-      #      KAFKA_ADVERTISED_HOST_NAME: localhost
-      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      #      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://127.0.0.1:9094
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CREATE_TOPICS: "drone-status:1:1,drone-commands:1:1,drone-delivery-update:1:1,order-create:1:1,order-delivered:1:1,order-cancelled:1:1,order-soon:1:1,order-packed:1:1"
     networks:
@@ -246,7 +202,7 @@ services:
   ############  GRAFANA  #################
   grafana:
     image: grafana/grafana
-    container_name: grafana
+    container_name: dronazone-grafana
     restart: always
     expose:
       - 3000
@@ -262,7 +218,7 @@ services:
 
   influxdb:
     image: influxdb
-    container_name: influxdb
+    container_name: dronazone-influxdb
     restart: always
     expose:
       - 8086

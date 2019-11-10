@@ -9,13 +9,13 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -37,13 +37,15 @@ public class EndTwoEndStepDefs {
     private String drone_service_url = "http://localhost:8083";
     private String drone_mock_url = "http://localhost:8084";
     private List<Long> currentOrderIds = new ArrayList<>();
-    private List<Long> deliveringDronesIds = new ArrayList<>();
+    private HashMap<Integer, Long> deliveringDronesIds = new HashMap<>();
+    private Logger logger = LoggerFactory.getLogger(EndTwoEndStepDefs.class);
 
     @Given("All Server Started")
     public void allServerStarted() {
         serverStarted("http://localhost:8081", "Warehouse");
         serverStarted("http://localhost:8082", "Order");
         serverStarted("http://localhost:8083", "Drone");
+        serverStarted("http://localhost:8084", "DroneMock");
     }
 
     @When("Roger passes {int} orders")
@@ -52,6 +54,7 @@ public class EndTwoEndStepDefs {
         JsonElement first_order = orderQueryJson("Item1");
         restTemplate = new RestTemplate();
         String orderServiceUrl = "http://" + ORDER_HOST + ":" + ORDER_PORT + "/order";
+        // TODO: 06/11/2019 log query
         ResponseEntity<String> order1 = restTemplate.postForEntity(orderServiceUrl, first_order.getAsJsonObject().toString(), String.class);
         JsonObject result_order_one = new JsonParser().parse(order1.getBody()).getAsJsonObject().getAsJsonObject("result");
         this.customer_id = result_order_one.getAsJsonObject("customer").get("id").getAsLong();
@@ -107,15 +110,15 @@ public class EndTwoEndStepDefs {
         JsonArray json_orders = this.warehouse_orders_json.getAsJsonArray();
         JsonElement first_order = json_orders.get(json_orders.size() - 2);
         JsonElement secondOrder = json_orders.get(json_orders.size() - 1);
-        assertEquals(customer_id, first_order.getAsJsonObject().get("customer_id").getAsLong());
-        assertEquals(customer_id, secondOrder.getAsJsonObject().get("customer_id").getAsLong());
+        assertEquals(customer_id, first_order.getAsJsonObject().get("customerId").getAsLong());
+        assertEquals(customer_id, secondOrder.getAsJsonObject().get("customerId").getAsLong());
     }
 
     @When("Klaus notifies all the passed orders are ready")
     public void klauseNotifiesAllThePassedOrdersAreReady() {
         for (JsonElement order_json :
                 this.warehouse_orders_json.getAsJsonArray()) {
-            long order_id = order_json.getAsJsonObject().get("order_id").getAsLong();
+            long order_id = order_json.getAsJsonObject().get("orderId").getAsLong();
             restTemplate = new RestTemplate();
             restTemplate.put(this.warehouse_base_url + "/warehouse/orders/" + order_id, String.class);
         }
@@ -124,23 +127,47 @@ public class EndTwoEndStepDefs {
     @Then("{int} drones receives delivery assignement commands")
     public void dronesReceivesDeliveryAssignementCommands(int arg0) {
         restTemplate = new RestTemplate();
-        ResponseEntity<JsonNode> commands = restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/commands", JsonNode.class);
-        JsonNode json = commands.getBody();
-        for (JsonNode node :
-                json) {
-            if (node.get("type").toString().equals("DELIVERY") && this.currentOrderIds.contains(node.get("delivery").get("id").asLong())) {
-                this.deliveringDronesIds.add(node.get("target").get("droneID").asLong());
+        ResponseEntity<JsonNode> commands = null;
+        Set<JsonNode> delivery_commands_id = null;
+        List<Long> longStream = new ArrayList<>();
+
+        for (int i = 0; i < 5; i++) {
+            commands = restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/commands", JsonNode.class);
+            JsonNode json = commands.getBody();
+            for (JsonNode node :
+                    json) {
+                if (node.get("command").asText().equals("DELIVERY") && this.currentOrderIds.contains(node.get("delivery").get("orderId").asLong())) {
+                    this.deliveringDronesIds.put(currentOrderIds.indexOf(node.get("delivery").get("orderId").asLong()), node.get("target").get("droneID").asLong());
+                }
+
+            }
+            delivery_commands_id = new HashSet<>(json.findValues("orderId"));
+            longStream = delivery_commands_id.stream().map(n -> n.asLong(-1)).filter(l -> this.currentOrderIds.contains(l)).collect(Collectors.toList());
+            if (longStream.size() >= 2) {
+                break;
+            }
+            try {
+                Thread.sleep(
+                        1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
-        List<JsonNode> delivery_commands_id = json.findValues("orderId");
+
         // TODO: 25/10/2019 Uncomment for commit
-        assertTrue(delivery_commands_id.stream().map(n -> n.asLong(-1)).filter(l -> this.currentOrderIds.contains(l)).count() == 2);
+        assertTrue(longStream.size() == 2);
         System.out.println(commands);
     }
 
+    @And("Drone for the order {int} pickup it's parcel")
+    public void droneForTheOrderPickupItSParcel(int orderIndex) {
+        Long droneId = this.deliveringDronesIds.get(orderIndex - 1);
+        restTemplate.getForEntity(this.drone_mock_url + String.format("/commands/debug/%d/finishPickup", droneId), JsonNode.class);
+    }
     @When("Drone for the order {int} approches his target")
     public void droneForTheOrderApprochesHisTarget(int drone_index) {
-        restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/finishDelivery", JsonNode.class);
+        long droneId = this.deliveringDronesIds.get(drone_index - 1);
+        restTemplate.getForEntity(this.drone_mock_url + String.format("/commands/debug/%d/finishDelivery", droneId), JsonNode.class);
     }
 
     @Then("A delivery notification is sent to Roger for order {int}")
@@ -148,11 +175,10 @@ public class EndTwoEndStepDefs {
         restTemplate = new RestTemplate();
         ResponseEntity<JsonNode> notifications = restTemplate.getForEntity(this.notification_mock_url + "/notifications/mock/notification_history", JsonNode.class);
         List<String> items = notifications.getBody().findValues("item_name").stream().map(n -> n.toString()).collect(Collectors.toList());
-        for (JsonElement order :
-                this.passedOrders) {
-            String itemName = order.getAsJsonObject().get("item").getAsJsonObject().get("name").toString();
-            assertTrue("Should  Notification for item " + itemName, items.contains(itemName));
-        }
+        JsonElement order = this.passedOrders.get(order_index);
+        String itemName = order.getAsJsonObject().get("item").getAsJsonObject().get("name").toString();
+        assertTrue("Should contain a notification for item " + itemName, items.contains(itemName));
+
     }
 
     @When("Drone for the order {int} delivers")
@@ -197,7 +223,7 @@ public class EndTwoEndStepDefs {
         boolean command_received = false;
         for (JsonNode node :
                 json) {
-            if (node.get("type").toString().equals("CALLBACK") && this.deliveringDronesIds.contains(node.get("target").get("droneID").asLong())) {
+            if (node.get("type").toString().equals("CALLBACK") && this.deliveringDronesIds.containsValue(node.get("target").get("droneID").asLong())) {
                 command_received = true;
             }
         }
@@ -231,20 +257,38 @@ public class EndTwoEndStepDefs {
         RestTemplate restTemplate = new RestTemplate();
         boolean serverStarted = false;
         int count = 0;
-        while (!serverStarted && count < 60) {
+
+        while (!serverStarted) {
             try {
                 restTemplate.getForEntity(url, String.class);
                 serverStarted = true;
             } catch (RestClientException e) {
                 System.out.println("Waiting for " + serverName);
                 count++;
+                if (count % 60 == 0) {
+                    logger.warn("It's been %d minutes, maybe check the server status to see if it is still starting", count / 30);
+                }
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
             }
+
         }
         return count < 60;
     }
+
+
+    @And("A reseted drone mock")
+    public void aResetedDroneMock() {
+        restTemplate = new RestTemplate();
+        restTemplate.getForEntity(this.drone_mock_url + "/commands/debug/reset", String.class);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 }

@@ -4,6 +4,7 @@ import com.google.common.base.Predicates;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 import springfox.documentation.builders.PathSelectors;
@@ -15,6 +16,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @Configuration
 @EnableScheduling
 @EnableSwagger2
+@EnableKafka
 public class DroneMockConfig {
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {

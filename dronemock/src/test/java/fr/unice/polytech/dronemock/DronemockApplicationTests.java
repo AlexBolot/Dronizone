@@ -107,7 +107,7 @@ public class DronemockApplicationTests {
     @Test
     public void deliveryCommandTest() throws Exception {
         long droneid = initializeDrone();
-        Delivery delivery = new Delivery(5, 5, 5, new Location(7, 7), new Location(8, 8), true);
+        Delivery delivery = new Delivery(5, 5, 5, false, new Location(7, 7), new Location(8, 8), true);
         String jsonDelivery = new ObjectMapper().writeValueAsString(delivery);
 
         String event = "{\"type\":\"DELIVERY\",\"target\":{\"droneID\":" + droneid + " },\"delivery\":" + jsonDelivery + "}";

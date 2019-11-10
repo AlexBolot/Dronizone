@@ -1,8 +1,9 @@
 spring:
   kafka:
-    bootstrap-servers: ${KAFKA_HOST}:9092
+    bootstrap-servers: ${KAFKA_HOST}
     consumer:
       group-id: drone_mock_group
+      enable-auto-commit: true
 
 #    properties:
 #      security:

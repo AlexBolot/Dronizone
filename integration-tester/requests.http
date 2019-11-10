@@ -38,10 +38,16 @@ GET http://localhost:8081/warehouse/orders
 
 ###
 #### Setting orders ready for delivery
-PUT http://localhost:8081/warehouse/orders/2
+PUT http://localhost:8081/warehouse/orders/1
 
 ###
 GET http://localhost:8084/commands/debug/commands
+
+###
+GET http://localhost:8084/commands/debug/reset
+
+###
+GET http://localhost:8084/commands/debug/
 
 ###
 GET http://localhost:44444/notifications/mock/notification_history

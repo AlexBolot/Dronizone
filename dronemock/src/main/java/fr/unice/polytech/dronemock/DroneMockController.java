@@ -33,10 +33,10 @@ public class DroneMockController {
     @Autowired
     private KafkaTemplate kafkaTemplate;
     private List<JsonNode> commandHistory = new ArrayList<>();
-    private Map<Drone, Location> bases = new HashMap<>();
-    private Map<Drone, Delivery> deliveries = new HashMap<>();
-    private Map<Drone, Boolean> pickups = new HashMap<>();
-    private Map<Drone, Location> targets = new HashMap<>();
+    private Map<Long, Location> bases = new HashMap<>();
+    private Map<Long, Delivery> deliveries = new HashMap<>();
+    private Map<Long, Boolean> pickups = new HashMap<>();
+    private Map<Long, Location> targets = new HashMap<>();
     private Logger logger = LoggerFactory.getLogger(DroneMockController.class);
 
     public DroneMockController(Environment env, KafkaTemplate kafkaTemplate) {
@@ -64,8 +64,8 @@ public class DroneMockController {
     public void finishPickup(@PathVariable(name = "droneid") long droneId) {
         Optional<Drone> resultDrone = getDroneById(droneId);
         Drone drone = resultDrone.orElseThrow(IllegalArgumentException::new);
-        if (this.deliveries.containsKey(drone)) {
-            drone.getWhereabouts().setLocation(this.deliveries.get(drone).getPickup_location());
+        if (this.deliveries.containsKey(drone.getDroneID())) {
+            drone.getWhereabouts().setLocation(this.deliveries.get(drone.getDroneID()).getPickup_location());
         }
     }
 
@@ -77,9 +77,9 @@ public class DroneMockController {
     public void finishDelivery(@PathVariable(name = "droneid") long droneId) {
         Optional<Drone> resultDrone = getDroneById(droneId);
         Drone drone = resultDrone.orElseThrow(IllegalArgumentException::new);
-        if (this.deliveries.containsKey(drone)) {
-            drone.getWhereabouts().setLocation(this.deliveries.get(drone).getTarget_location());
-            deliveries.remove(drone);
+        if (this.deliveries.containsKey(drone.getDroneID())) {
+            drone.getWhereabouts().setLocation(this.deliveries.get(drone.getDroneID()).getTarget_location());
+            deliveries.remove(drone.getDroneID());
         }
     }
 
@@ -91,14 +91,14 @@ public class DroneMockController {
     @GetMapping("/debug/{droneid}/delivery")
     public Delivery getDelivery(@PathVariable(name = "droneid") long droneId) {
 
-        return this.deliveries.get(getDroneById(droneId).orElseThrow(IllegalAccessError::new));
+        return this.deliveries.get(droneId);
     }
 
     @GetMapping("/debug/{droneid}/base")
     public Location getBase(@PathVariable(name = "droneid") long droneId) {
         // Because despite all pointing to the contrary our map does not find the drone in her keys, so doing the job of the drone map because i ain't got time to deal with this shit
         // FIXME: 25/10/2019 use the normal map mechanism
-        return this.bases.entrySet().stream().filter(e -> e.getKey().getDroneID() == droneId).findFirst().orElseThrow(IllegalAccessError::new).getValue();
+        return this.bases.get(droneId);
 
     }
 
@@ -138,33 +138,35 @@ public class DroneMockController {
                 drone.getWhereabouts(),
                 drone.getDroneID(), drone.getDroneStatus(), System.currentTimeMillis());
         String droneStateJson = new ObjectMapper().writeValueAsString(droneState);
-        kafkaTemplate.send("drones", droneStateJson);
-        logger.info("publishing: {}", droneStateJson);
+        kafkaTemplate.send("drone-status", droneStateJson);
+//        logger.info("publishing: {}", droneStateJson);
 
 
         Location location = drone.getWhereabouts().getLocation();
 
         if (drone.getDroneStatus() == DroneStatus.ACTIVE) {
-            if (this.targets.containsKey(drone)) {
-                if (drone.getWhereabouts().getDistanceToTarget() < 100) {
-                    dispatchDeliveryUpdate(drone, deliveries.get(drone));
+            if (this.targets.containsKey(drone.getDroneID())) {
+                if (drone.getWhereabouts().getDistanceToTarget() < 100 && deliveries.containsKey(drone.getDroneID())) {
+                    dispatchDeliveryUpdate(drone, deliveries.get(drone.getDroneID()));
                 } else {
-                    moveDrone(location, this.targets.get(drone));
+                    moveDrone(location, this.targets.get(drone.getDroneID()));
                 }
             }
-            setDistanceToTarget(drone, this.targets.get(drone));
+            if (this.targets.containsKey(drone.getDroneID())) {
+                setDistanceToTarget(drone, this.targets.get(drone.getDroneID()));
+            }
         }
 
         if (drone.getDroneStatus() == DroneStatus.CALLED_HOME) {
 
-            if (this.bases.containsKey(drone)) {
-                Location base = this.bases.get(drone);
+            if (this.bases.containsKey(drone.getDroneID())) {
+                Location base = this.bases.get(drone.getDroneID());
                 double distanceToBase = distance(location.getLatitude(), base.getLatitude(),
                         location.getLongitude(), base.getLongitude(),
                         drone.getWhereabouts().getAltitude(),
                         drone.getWhereabouts().getAltitude());
                 if (distanceToBase < 100) {
-                    bases.remove(drone);
+                    bases.remove(drone.getDroneID());
                 } else {
                     moveDrone(location, base);
                 }
@@ -176,35 +178,42 @@ public class DroneMockController {
     }
 
     private void dispatchDeliveryUpdate(Drone drone, Delivery delivery) throws JsonProcessingException {
-        if (!this.pickups.get(drone)) {
-            this.pickups.put(drone, true);
-            this.targets.put(drone, delivery.getTarget_location());
+        if (this.pickups.get(drone.getDroneID()) == null) {
+            this.pickups.put(drone.getDroneID(), true);
+            this.targets.put(drone.getDroneID(), delivery.getTarget_location());
             // TODO send start delivery to Drone service
             DeliveryUpdate p = new DeliveryUpdate(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DeliveryStatus.DELIVERING);
             this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
         } else {
             DeliveryUpdate p = new DeliveryUpdate(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DeliveryStatus.DELIVERED);
             drone.setDroneStatus(DroneStatus.ASIDE);
-            this.deliveries.remove(drone);
-            this.targets.remove(drone);
+            this.deliveries.remove(drone.getDroneID());
+            this.targets.remove(drone.getDroneID());
             // TODO send delivery finish to Drone service
             this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
         }
     }
 
-    @KafkaListener(topics = "drone-commands")
+    @KafkaListener(topics = "drone-commands", groupId = "drone_mock_group")
     public void receivedCommand(String message) {
+        logger.info("Drone command {}", message);
         HashMap<String, Consumer<JsonNode>> commandTreatments = new HashMap<>();
         commandTreatments.put(INIT_TYPE, this::handleInitialisation);
         commandTreatments.put(DELIVERY_TYPE, this::handleDelivery);
         commandTreatments.put(CALLBACK_TYPE, this::handleCallback);
+
         try {
             JsonNode node = new ObjectMapper().readTree(message);
-            String command = node.get("type").asText();
+            String command = node.get("command").asText();
             this.commandHistory.add(node);
+            logger.info("Command History {}", this.commandHistory);
             commandTreatments.get(command).accept(node);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IO Exception in command processing {1}", e);
+        } catch (IllegalArgumentException e) {
+            logger.info("Unknown drone");
+        } catch (Exception e) {
+            logger.error("Error in command processing {1}", e);
         }
     }
 
@@ -212,7 +221,7 @@ public class DroneMockController {
         try {
             long id = extractCommandDroneid(node);
             Drone drone = this.getDroneById(id).orElseThrow(IllegalArgumentException::new);
-            this.bases.put(drone, new ObjectMapper().readValue(node.get("baseLocation").toString(), Location.class));
+            this.bases.put(drone.getDroneID(), new ObjectMapper().readValue(node.get("baseLocation").toString(), Location.class));
             drone.setDroneStatus(DroneStatus.CALLED_HOME);
         } catch (IOException e) {
             e.printStackTrace();
@@ -225,9 +234,9 @@ public class DroneMockController {
             Delivery delivery = new ObjectMapper().readValue(node.get("delivery").toString(), Delivery.class);
             Drone drone = getDroneById(id).orElseThrow(IllegalAccessError::new);
             setDistanceToTarget(drone, delivery.getPickup_location());
-            this.targets.put(drone, delivery.getPickup_location());
+            this.targets.put(drone.getDroneID(), delivery.getPickup_location());
             drone.setDroneStatus(DroneStatus.ACTIVE);
-            deliveries.put(drone, delivery);
+            deliveries.put(drone.getDroneID(), delivery);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -246,8 +255,9 @@ public class DroneMockController {
 
     private void handleInitialisation(JsonNode node) {
         long id = extractCommandDroneid(node);
-        Drone drone = getDroneById(id).orElseThrow(IllegalAccessError::new);
+        Drone drone = getDroneById(id).orElseThrow(IllegalArgumentException::new);
         drone.setDroneID(node.get("assignedId").asLong());
+        drone.setDroneStatus(DroneStatus.ACTIVE);
     }
 
     private void setDistanceToTarget(Drone drone, Location target) {
