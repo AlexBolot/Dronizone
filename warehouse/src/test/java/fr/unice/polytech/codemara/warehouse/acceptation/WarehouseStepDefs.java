@@ -64,6 +64,7 @@ public class WarehouseStepDefs {
 
     @Given("^A basic order list$")
     public void aBasicOrderList() {
+
         logger.info("######################## Soit une liste de commandes simples ########################");
         parcels = Arrays.asList(
                 new Parcel(),
@@ -71,6 +72,7 @@ public class WarehouseStepDefs {
                 new Parcel()
         );
         for (int i = 0; i < parcels.size(); i++) {
+            parcels.get(i).setOrderId(i + 1);
             parcels.get(i).setItemId(i);
             parcels.get(i).setDeliveryLocation(new Location(i, i));
             parcels.get(i).setStatus(ParcelStatus.PENDING);
