@@ -18,5 +18,4 @@ script:
   - cd dronemock
   - mvn clean install -q -B -Dorg.slf4j.simpleLogger.defaultLogLevel=WARN > /dev/null
   - cd ../
-  - docker-compose up -d --build
-  - docker-compose down
+  - ./run.sh
