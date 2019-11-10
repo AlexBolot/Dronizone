@@ -101,7 +101,7 @@ public class DroneStepDefs {
 
     @When("Klaus requires a delivery")
     public void klausRequiresADelivery() throws Exception {
-        DeliveryDTO deliveryDTO = new DeliveryDTO(1, 1, "", new Location(10, 10), new Location(11, 11), false, System.currentTimeMillis());
+        DeliveryDTO deliveryDTO = new DeliveryDTO(1, 1, "", new Location(10, 10), new Location(11, 11), System.currentTimeMillis());
         Delivery test_delivery = new Delivery();
         test_delivery.setItemId(1);
         test_delivery.setOrderId(1);
