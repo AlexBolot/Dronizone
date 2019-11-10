@@ -5,15 +5,17 @@ import io.cucumber.junit.CucumberOptions;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.runner.RunWith;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.kafka.test.rule.EmbeddedKafkaRule;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles("test")
+//@ActiveProfiles("test")
 @RunWith(Cucumber.class)
+@AutoConfigureMockMvc
 @CucumberOptions(features = "src/test/resources/features", plugin = {"pretty", "json:target/cucumber-report.json"})
 public class StatServiceControllerCucumberTest {
     @ClassRule
-    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "orders");
+    public static EmbeddedKafkaRule rule = new EmbeddedKafkaRule(1, true, "order-packed", "order-delivered");
 
     @BeforeClass
     public static void beforeAll() {
