@@ -12,6 +12,6 @@ public class DeliveryDTO {
     private long orderId;
     private String status;
     private Location pickupLocation;
-    private Location targetLocation;
-    private long timestamps;
+    private Location deliveryLocation;
+    private long timestamp;
 }

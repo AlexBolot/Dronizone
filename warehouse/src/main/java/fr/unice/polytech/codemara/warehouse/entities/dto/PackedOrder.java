@@ -12,7 +12,6 @@ public class PackedOrder {
 
     int orderId;
     String status;
-    int customerId;
     Location deliveryLocation;
     Location pickupLocation;
     long timestamp;

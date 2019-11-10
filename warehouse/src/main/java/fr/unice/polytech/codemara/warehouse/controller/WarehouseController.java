@@ -49,7 +49,6 @@ public class WarehouseController {
 
             PackedOrder packedOrder = new PackedOrder(ready.get().getOrderId(),
                     ready.get().getStatus().toString(),
-                    ready.get().getCustomerId(),
                     ready.get().getDeliveryLocation(),
                     ready.get().getDeliveryLocation(),
                     System.currentTimeMillis());

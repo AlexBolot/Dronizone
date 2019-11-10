@@ -118,8 +118,7 @@ public class DroneController {
             DeliveryDTO deliveryDTO = new ObjectMapper().readValue(message, DeliveryDTO.class);
             Delivery delivery = new Delivery();
             delivery.setPickup_location(deliveryDTO.getPickupLocation());
-            delivery.setTarget_location(deliveryDTO.getTargetLocation());
-            delivery.setItemId(deliveryDTO.getItemId());
+            delivery.setTarget_location(deliveryDTO.getDeliveryLocation());
             delivery.setOrderId(deliveryDTO.getOrderId());
             deliveryRepository.save(delivery);
 
