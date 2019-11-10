@@ -51,14 +51,13 @@ public class RegisterStatStepDefs {
     @When("Klaus packs the order")
     public void klausPacksTheOrder() throws InterruptedException {
         this.kafkaTemplate.send("order-packed", "{\"order_id\":1,\"status\":\"order-packed\"");
-        System.out.println("------------------------------------Now waiting 10s");
-        Thread.sleep(1000);
+        System.out.println("------------------------------------Now waiting 2s");
+        Thread.sleep(2000);
         System.out.println("-------------------I have waited.");
     }
 
     @Then("a new entry is registred in the database")
     public void aNewEntryIsRegistredInTheDatabase() {
-
         verify(influxDB, times(1)).write(any(Point.class));
     }
 

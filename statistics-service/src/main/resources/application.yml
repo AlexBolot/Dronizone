@@ -2,4 +2,4 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_HOST}:9092
     consumer:
-      group-id: order-service
+      group-id: stat-service

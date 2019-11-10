@@ -5,4 +5,4 @@ spring:
       order-delivered: order-delivered
       order-packed: order-packed
     consumer:
-      group-id: test
+      group-id: stat-service

@@ -41,7 +41,7 @@ public class StatisticsController {
     }
 
 
-    @KafkaListener(topics = ORDER_PACKED)
+    @KafkaListener(topics = ORDER_PACKED, groupId = "stat-service")
     public void listenForOrderPacked(String content) {
         Gson gson = new Gson();
         OrderStatusMessage osm = gson.fromJson(content, OrderStatusMessage.class);
@@ -55,7 +55,7 @@ public class StatisticsController {
         influxDB.write(point);
     }
 
-    @KafkaListener(topics = ORDER_DELIVERED)
+    @KafkaListener(topics = ORDER_DELIVERED, groupId = "stat-service")
     public void listenForOrderDeliver(String content) {
         Gson gson = new Gson();
         OrderStatusMessage osm = gson.fromJson(content, OrderStatusMessage.class);
@@ -70,18 +70,17 @@ public class StatisticsController {
         influxDB.write(point);
     }
 
-    @GetMapping("/test")
-    public String testinflux() {
+    @GetMapping("/testget")
+    public String testGetData() {
         Query query = new Query("Select * from orders", "dronazone");
         InfluxDBResultMapper resultMapper = new InfluxDBResultMapper();
         List<Statistics> statisticsList = resultMapper
                 .toPOJO(influxDB.query(query), Statistics.class);
         return statisticsList.toString();
-
     }
 
-    @GetMapping("/testpeupler")
-    public String testPut() {
+    @GetMapping("/testput")
+    public String testPutData() {
         influxDB.setDatabase("dronazone");
         Point point = Point.measurement("orders")
                 .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
@@ -104,8 +103,8 @@ public class StatisticsController {
         return "ok";
     }
 
-    @GetMapping("/testkafka")
-    public String testPublish() {
+    @GetMapping("/testpublish")
+    public String testPublishData() {
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("orderid", "id");
         parameters.put("status", ORDER_PACKED);
