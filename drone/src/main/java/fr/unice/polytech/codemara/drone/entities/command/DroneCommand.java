@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 @AllArgsConstructor
 public class DroneCommand {
 
-    private final CommandType command;
+    private final CommandType type;
 
     private Drone target;
 
@@ -26,7 +26,7 @@ public class DroneCommand {
     }
 
     public DroneCommand copyWith(Drone target) {
-        DroneCommand copy = new DroneCommand(this.command);
+        DroneCommand copy = new DroneCommand(this.type);
         copy.target = target;
         copy.payload = payload;
         return copy;

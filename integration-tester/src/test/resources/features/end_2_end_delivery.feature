@@ -3,6 +3,8 @@ Feature: Full end to end delivery and tracking of a drone order
   # Enter feature description here
   Background:
     Given All Server Started
+#    And A reseted drone mock
+
   Scenario: 2 Orders are placed, one is delivered, the other trigger's notifications
     When Roger passes 2 orders
 

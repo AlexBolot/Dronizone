@@ -2,7 +2,9 @@ package fr.unice.polytech.codemara.warehouse.entities;
 
 import lombok.*;
 
-import javax.persistence.*;
+import javax.persistence.Embedded;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 
 @Entity
 @Data
@@ -13,12 +15,9 @@ import javax.persistence.*;
 public class Parcel {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private int orderId;
 
     private int itemId;
-
-    private int customerId;
 
     @Embedded
     private Location deliveryLocation;

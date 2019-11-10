@@ -1,6 +1,5 @@
 package fr.unice.polytech.codemara.warehouse.acceptation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.warehouse.entities.Location;
 import fr.unice.polytech.codemara.warehouse.entities.Parcel;
@@ -8,13 +7,10 @@ import fr.unice.polytech.codemara.warehouse.entities.ParcelStatus;
 import fr.unice.polytech.codemara.warehouse.entities.dto.CustomerOrder;
 import fr.unice.polytech.codemara.warehouse.entities.dto.PackedOrder;
 import fr.unice.polytech.codemara.warehouse.repositories.ParcelRepository;
-import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import junit.framework.TestCase;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +28,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,10 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -81,7 +72,6 @@ public class WarehouseStepDefs {
         );
         for (int i = 0; i < parcels.size(); i++) {
             parcels.get(i).setItemId(i);
-            parcels.get(i).setCustomerId(i);
             parcels.get(i).setDeliveryLocation(new Location(i, i));
             parcels.get(i).setStatus(ParcelStatus.PENDING);
             parcelRepository.save(parcels.get(i));

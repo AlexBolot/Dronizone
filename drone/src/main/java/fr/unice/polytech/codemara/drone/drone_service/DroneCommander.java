@@ -43,7 +43,7 @@ public class DroneCommander {
 
         try {
             Map<String, Object> params = new HashMap<>();
-            params.put("command", command.getCommand().toString());
+            params.put("command", command.getType().toString());
             params.put("droneId", command.getTarget().getDroneID());
             params.put("payload", command.getPayload());
             String kafkaCommand = new ObjectMapper().writeValueAsString(command);

@@ -66,6 +66,7 @@ public class DroneMockController {
         Drone drone = resultDrone.orElseThrow(IllegalArgumentException::new);
         if (this.deliveries.containsKey(drone.getDroneID())) {
             drone.getWhereabouts().setLocation(this.deliveries.get(drone.getDroneID()).getPickup_location());
+            drone.getWhereabouts().setDistanceToTarget(0);
         }
     }
 
@@ -79,7 +80,7 @@ public class DroneMockController {
         Drone drone = resultDrone.orElseThrow(IllegalArgumentException::new);
         if (this.deliveries.containsKey(drone.getDroneID())) {
             drone.getWhereabouts().setLocation(this.deliveries.get(drone.getDroneID()).getTarget_location());
-            deliveries.remove(drone.getDroneID());
+            drone.getWhereabouts().setDistanceToTarget(0);
         }
     }
 
@@ -149,11 +150,11 @@ public class DroneMockController {
                 if (drone.getWhereabouts().getDistanceToTarget() < 100 && deliveries.containsKey(drone.getDroneID())) {
                     dispatchDeliveryUpdate(drone, deliveries.get(drone.getDroneID()));
                 } else {
-                    moveDrone(location, this.targets.get(drone.getDroneID()));
+//                    moveDrone(location, this.targets.get(drone.getDroneID()));
                 }
             }
             if (this.targets.containsKey(drone.getDroneID())) {
-                setDistanceToTarget(drone, this.targets.get(drone.getDroneID()));
+//                setDistanceToTarget(drone, this.targets.get(drone.getDroneID()));
             }
         }
 
@@ -184,6 +185,7 @@ public class DroneMockController {
             // TODO send start delivery to Drone service
             DeliveryUpdate p = new DeliveryUpdate(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DeliveryStatus.DELIVERING);
             this.kafkaTemplate.send("drone-delivery-update", new ObjectMapper().writeValueAsString(p));
+            drone.getWhereabouts().setDistanceToTarget(500);
         } else {
             DeliveryUpdate p = new DeliveryUpdate(drone.getDroneID(), delivery.getOrderId(), delivery.getItemId(), DeliveryStatus.DELIVERED);
             drone.setDroneStatus(DroneStatus.ASIDE);
@@ -237,6 +239,7 @@ public class DroneMockController {
             this.targets.put(drone.getDroneID(), delivery.getPickup_location());
             drone.setDroneStatus(DroneStatus.ACTIVE);
             deliveries.put(drone.getDroneID(), delivery);
+            drone.getWhereabouts().setDistanceToTarget(500);
         } catch (IOException e) {
             e.printStackTrace();
         }

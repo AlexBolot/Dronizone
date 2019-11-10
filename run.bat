@@ -1,3 +1,3 @@
 cd integration-tester
-mvn clean verify
+call mvn clean verify
 cd ../

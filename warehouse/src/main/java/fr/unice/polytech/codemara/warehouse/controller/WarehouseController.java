@@ -1,8 +1,9 @@
 package fr.unice.polytech.codemara.warehouse.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.unice.polytech.codemara.warehouse.entities.ParcelStatus;
+import fr.unice.polytech.codemara.warehouse.entities.Location;
 import fr.unice.polytech.codemara.warehouse.entities.Parcel;
+import fr.unice.polytech.codemara.warehouse.entities.ParcelStatus;
 import fr.unice.polytech.codemara.warehouse.entities.dto.CustomerOrder;
 import fr.unice.polytech.codemara.warehouse.entities.dto.PackedOrder;
 import fr.unice.polytech.codemara.warehouse.repositories.ParcelRepository;
@@ -12,14 +13,16 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "/warehouse", produces = "application/json")
 public class WarehouseController {
 
-    private static final String WAREHOUSE_LON = "10.0";
-    private static final String WAREHOUSE_LAT = "10.0";
+    private static final double WAREHOUSE_LON = 10.0;
+    private static final double WAREHOUSE_LAT = 10.0;
     private final ParcelRepository parcelRepository;
 
     private final KafkaTemplate kafkaTemplate;
@@ -49,9 +52,8 @@ public class WarehouseController {
 
             PackedOrder packedOrder = new PackedOrder(ready.get().getOrderId(),
                     ready.get().getStatus().toString(),
-                    ready.get().getCustomerId(),
                     ready.get().getDeliveryLocation(),
-                    ready.get().getDeliveryLocation(),
+                    new Location(WAREHOUSE_LON, WAREHOUSE_LAT),
                     System.currentTimeMillis());
 
             try {
@@ -95,7 +97,7 @@ public class WarehouseController {
     public void orderCreate(String message) {
         try {
             CustomerOrder order = new ObjectMapper().readValue(message, CustomerOrder.class);
-            Parcel parcel = new Parcel(order.getOrderId(), order.getItemId(), order.getCustomerId(), order.getDeliveryLocation(), ParcelStatus.PENDING);
+            Parcel parcel = new Parcel(order.getOrderId(), order.getItemId(), order.getDeliveryLocation(), ParcelStatus.PENDING);
             parcelRepository.save(parcel);
         } catch (Exception e) {
             logger.error("WarehouseController.orderCreate", e);

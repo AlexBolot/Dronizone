@@ -80,8 +80,13 @@ public class DroneController {
     public void changeDroneStatus(@PathVariable long droneID, @PathVariable String status) {
         Optional<Drone> drone = droneRepository.findById(droneID);
         drone.ifPresent(d -> {
-            d.setDroneStatus(DroneStatus.valueOf(status));
+            DroneStatus droneStatus = DroneStatus.valueOf(status);
+            d.setDroneStatus(droneStatus);
             droneRepository.save(d);
+            DroneCommand callbackCommand = new CallbackCommand(baseLocation);
+            callbackCommand.setTarget(d);
+            if (droneStatus.equals(DroneStatus.CALLED_HOME))
+                droneCommander.sendCommand(callbackCommand);
         });
     }
 
@@ -118,8 +123,7 @@ public class DroneController {
             DeliveryDTO deliveryDTO = new ObjectMapper().readValue(message, DeliveryDTO.class);
             Delivery delivery = new Delivery();
             delivery.setPickup_location(deliveryDTO.getPickupLocation());
-            delivery.setTarget_location(deliveryDTO.getTargetLocation());
-            delivery.setItemId(deliveryDTO.getItemId());
+            delivery.setTarget_location(deliveryDTO.getDeliveryLocation());
             delivery.setOrderId(deliveryDTO.getOrderId());
             deliveryRepository.save(delivery);
 
@@ -198,10 +202,18 @@ public class DroneController {
                 case PICKING_UP:
                     handlePickingDeliveryOrder(deliveryUpdate);
                     break;
+                case DELIVERING:
+                    handleDeliveringOrder(deliveryUpdate);
             }
         } catch (IOException e) {
             logger.error("DroneController.dronesPickupReceiver", e);
         }
+    }
+
+    private void handleDeliveringOrder(DeliveryUpdateDTO update) {
+        Drone drone = droneRepository.findById(update.getDroneId()).orElseThrow(IllegalArgumentException::new);
+        drone.getCurrentDelivery().setPicked_up(true);
+        deliveryRepository.save(drone.getCurrentDelivery());
     }
 
     private void handleDeliveredOrder(DeliveryUpdateDTO update) {
