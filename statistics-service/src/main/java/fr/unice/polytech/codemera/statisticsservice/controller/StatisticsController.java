@@ -1,5 +1,7 @@
 package fr.unice.polytech.codemera.statisticsservice.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemera.statisticsservice.entities.OrderStatusMessage;
 import fr.unice.polytech.codemera.statisticsservice.entities.Statistics;
 import fr.unice.polytech.codemera.statisticsservice.entities.Status;
@@ -10,11 +12,14 @@ import org.influxdb.dto.Query;
 import org.influxdb.impl.InfluxDBResultMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -26,22 +31,27 @@ public class StatisticsController {
     private static final String ORDER_ID_TAG_NAME = "orderID";
     private static final String ORDER_STATUS_TAG_NAME = "orderStatus";
 
+    private final KafkaTemplate kafkaTemplate;
+
     @Autowired
     private InfluxDB influxDB;
+
+    public StatisticsController(KafkaTemplate kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
 
     @KafkaListener(topics = ORDER_PACKED)
     public void listenForOrderPacked(String content) {
         Gson gson = new Gson();
         OrderStatusMessage osm = gson.fromJson(content, OrderStatusMessage.class);
-        Status orderStatus = Status.valueOf(osm.getStatus());
         int orderID = osm.getOrder_id();
-        Point point = Point.measurement(ORDER_PACKED)
+        influxDB.setDatabase("dronazone");
+        Point point = Point.measurement("orders")
                 .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                 .addField(ORDER_ID_TAG_NAME, orderID)
-                .addField(ORDER_STATUS_TAG_NAME, orderStatus.toString())
+                .addField(ORDER_STATUS_TAG_NAME, osm.getStatus())
                 .build();
-        //System.out.println("LALALALALALALALA JE SUIS LAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + influxDB);
         influxDB.write(point);
     }
 
@@ -49,14 +59,14 @@ public class StatisticsController {
     public void listenForOrderDeliver(String content) {
         Gson gson = new Gson();
         OrderStatusMessage osm = gson.fromJson(content, OrderStatusMessage.class);
-        Status orderStatus = Status.valueOf(osm.getStatus());
+        String orderStatus = osm.getStatus();
         int orderID = osm.getOrder_id();
-        Point point = Point.measurement(ORDER_DELIVERED)
+        influxDB.setDatabase("dronazone");
+        Point point = Point.measurement("orders")
                 .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                 .addField(ORDER_ID_TAG_NAME, orderID)
-                .addField(ORDER_STATUS_TAG_NAME, orderStatus.toString())
+                .addField(ORDER_STATUS_TAG_NAME, orderStatus)
                 .build();
-        //System.out.println("LALALALALALALALA JE SUIS LAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + influxDB);
         influxDB.write(point);
     }
 
@@ -73,7 +83,7 @@ public class StatisticsController {
     @GetMapping("/testpeupler")
     public String testPut() {
         influxDB.setDatabase("dronazone");
-        Point point = Point.measurement("test")
+        Point point = Point.measurement("orders")
                 .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                 .addField(ORDER_ID_TAG_NAME, 1)
                 .addField(ORDER_STATUS_TAG_NAME, Status.DELIVERED.toString())
@@ -92,6 +102,22 @@ public class StatisticsController {
                 .build();
         influxDB.write(point3);
         return "ok";
+    }
+
+    @GetMapping("/testkafka")
+    public String testPublish() {
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("orderid", "id");
+        parameters.put("status", ORDER_PACKED);
+        try {
+            kafkaTemplate.send("order-packed", new ObjectMapper().writeValueAsString(parameters));
+            return "ok";
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return "ko";
+        }
+
+
     }
 
 }

@@ -49,19 +49,16 @@ public class RegisterStatStepDefs {
     }
 
     @When("Klaus packs the order")
-    public void klausPacksTheOrder() {
-        kafkaTemplate.send("order-packed", "{\"order_id\":1,\"status\":\"packed\"");
+    public void klausPacksTheOrder() throws InterruptedException {
+        this.kafkaTemplate.send("order-packed", "{\"order_id\":1,\"status\":\"order-packed\"");
+        System.out.println("------------------------------------Now waiting 10s");
+        Thread.sleep(1000);
+        System.out.println("-------------------I have waited.");
     }
 
     @Then("a new entry is registred in the database")
     public void aNewEntryIsRegistredInTheDatabase() {
-        System.out.println("------------------------------------Now waiting 10s");
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        // verify(influxDB, times(1)).query(any(Query.class));
+
         verify(influxDB, times(1)).write(any(Point.class));
     }
 
@@ -70,8 +67,9 @@ public class RegisterStatStepDefs {
     }
 
     @When("the order is delivered")
-    public void theOrderIsDelivered() {
+    public void theOrderIsDelivered() throws InterruptedException {
         kafkaTemplate.send("order-delivered", "{\"order_id\":1,\"status\":\"delivered\"");
+        Thread.sleep(1000);
     }
 
     @Given("A wired kafka template")
