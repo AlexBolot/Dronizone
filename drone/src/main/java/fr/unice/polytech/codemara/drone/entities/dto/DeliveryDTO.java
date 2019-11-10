@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DeliveryDTO {
     private long orderId;
-    private long itemId;
     private String status;
     private Location pickupLocation;
     private Location targetLocation;

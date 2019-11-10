@@ -204,7 +204,7 @@ public class DroneMockController {
 
         try {
             JsonNode node = new ObjectMapper().readTree(message);
-            String command = node.get("command").asText();
+            String command = node.get("type").asText();
             this.commandHistory.add(node);
             logger.info("Command History {}", this.commandHistory);
             commandTreatments.get(command).accept(node);
