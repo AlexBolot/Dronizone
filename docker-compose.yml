@@ -26,7 +26,7 @@ services:
     environment:
       NOTIFICATION_HOST: notification
       DRONE_HOST: http://drone-server:8080
-      KAFKA_HOST: http://kafka
+      KAFKA_HOST: http://kafka:9092
 
 ############  ORDER  #################
 
@@ -52,7 +52,7 @@ services:
       DATASOURCE_USERNAME: dronazone
       DATASOURCE_PWD: dronazone
       WAREHOUSE_HOST: http://warehouse-server:8080
-      KAFKA_HOST: http://kafka
+      KAFKA_HOST: http://kafka:9092
     depends_on:
       - kafka
 
@@ -106,7 +106,7 @@ services:
       INFLUX_HOST: http://influxdb:8086
       INFLUX_USERNAME: dronazone
       INFLUX_PWD: dronazone
-      KAFKA_HOST: http://kafka
+      KAFKA_HOST: http://kafka:9092
     depends_on:
       - kafka
       - influxdb
