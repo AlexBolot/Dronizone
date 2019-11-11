@@ -1,3 +1,3 @@
-
-docker-compose up
-ubuntu run ./queries.sh
+cd integration-tester
+call mvn clean verify
+cd ../

@@ -1,4 +1,4 @@
-package fr.unice.polytech.entities;
+package fr.unice.polytech.codemera.statisticsservice.entities;
 
 public class OrderStatusMessage {
 

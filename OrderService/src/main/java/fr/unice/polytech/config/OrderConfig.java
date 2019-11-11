@@ -1,8 +1,6 @@
 package fr.unice.polytech.config;
 
 import com.googlecode.jsonrpc4j.spring.AutoJsonRpcServiceImplExporter;
-import fr.unice.polytech.service.OrderService;
-import fr.unice.polytech.service.impl.OrderServiceImpl;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,11 +15,7 @@ public class OrderConfig {
 
     @Bean
     public static AutoJsonRpcServiceImplExporter autoJsonRpcServiceImplExporter() {
-        AutoJsonRpcServiceImplExporter exp = new AutoJsonRpcServiceImplExporter();
-        //in here you can provide custom HTTP status code providers etc. eg:
-//        exp.setHttpStatusCodeProvider();
-//        exp.setErrorResolver();
-        return exp;
+        return new AutoJsonRpcServiceImplExporter();
     }
 
     @Bean

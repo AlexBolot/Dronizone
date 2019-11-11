@@ -8,6 +8,7 @@
     <modules>
         <module>drone</module>
         <module>warehouse</module>
+        <module>statistics-service</module>
         <module>OrderService</module>
         <module>WatchDog</module>
     </modules>
@@ -102,6 +103,16 @@
             <artifactId>spring-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>2.9.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>2.9.2</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -114,6 +125,12 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.4</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/statistics-service/**</exclude>
+
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

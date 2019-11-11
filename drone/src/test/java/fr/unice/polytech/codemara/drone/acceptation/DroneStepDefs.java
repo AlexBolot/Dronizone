@@ -2,6 +2,7 @@ package fr.unice.polytech.codemara.drone.acceptation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.unice.polytech.codemara.drone.entities.*;
+import fr.unice.polytech.codemara.drone.entities.dto.DeliveryDTO;
 import fr.unice.polytech.codemara.drone.repositories.DeliveryRepository;
 import fr.unice.polytech.codemara.drone.repositories.DroneRepository;
 import fr.unice.polytech.codemara.drone.repositories.WhereaboutsRepository;
@@ -88,6 +89,7 @@ public class DroneStepDefs {
     @When("Elena callbacks the drones")
     public void elenaCallbacksTheDrones() throws Exception {
         mockMvc.perform(post("/drone/fleet/command/callback")).andExpect(status().isOk());
+        Thread.sleep(10000);
     }
 
 
@@ -99,21 +101,20 @@ public class DroneStepDefs {
 
     @When("Klaus requires a delivery")
     public void klausRequiresADelivery() throws Exception {
+        DeliveryDTO deliveryDTO = new DeliveryDTO(1, "", new Location(10, 10), new Location(11, 11), System.currentTimeMillis());
         Delivery test_delivery = new Delivery();
-        test_delivery.setItemId(1);
         test_delivery.setOrderId(1);
         test_delivery.setPickup_location(new Location(10, 10));
         test_delivery.setTarget_location(new Location(11, 11));
-        String test_delivery_json = new ObjectMapper().writeValueAsString(test_delivery);
+        String test_delivery_json = new ObjectMapper().writeValueAsString(deliveryDTO);
         this.context.currentDelivery = test_delivery;
-        MockHttpServletRequestBuilder put = post("/drone/request_delivery");
-        put = put.contentType("application/json");
-        mockMvc.perform(put.content(test_delivery_json)).andExpect(status().isOk());
+        this.context.kafkaTemplate.send("order-packed", test_delivery_json);
+        Thread.sleep(1000);
     }
 
     @And("The sent delivery is registered")
     public void theSentDeliveryIsRegistered() {
-        assertNotNull(deliveryRepository.findByOrderIdAndItemId(this.context.currentDelivery.getOrderId(), this.context.currentDelivery.getItemId()));
+        assertNotNull(deliveryRepository.findByOrderId(this.context.currentDelivery.getOrderId()));
     }
 
 
@@ -125,7 +126,6 @@ public class DroneStepDefs {
             Delivery delivery = new Delivery();
             delivery.setTarget_location(new Location(10, 10));
             delivery.setPickup_location(new Location(11, 11));
-            delivery.setItemId(i);
             delivery.setOrderId(i);
             deliveryRepository.save(delivery);
             drone.currentDelivery = delivery;
@@ -203,6 +203,7 @@ public class DroneStepDefs {
         Delivery delivery = new Delivery();
         delivery.setTarget_location(new Location(45, 7));
         delivery.setPickup_location(new Location(45, 8));
+        delivery.setPicked_up(true); // Drone already picked up package
         deliveryRepository.save(delivery);
         this.context.currentDrone.setCurrentDelivery(delivery);
         Whereabouts whereabouts = new Whereabouts(0, new Location(45, 7), 100, 300);
@@ -211,7 +212,24 @@ public class DroneStepDefs {
         this.context.currentDrone.setBatteryLevel(100);
         this.context.currentDrone.setDroneStatus(ACTIVE);
         droneRepository.save(context.currentDrone);
+    }
 
+
+    @Given("A drone going to pickup")
+    public void aDroneGoingToPickup() {
+        this.context.currentDrone = new Drone();
+        Delivery delivery = new Delivery();
+        delivery.setTarget_location(new Location(45, 7));
+        delivery.setPickup_location(new Location(45, 8));
+        delivery.setPicked_up(false); // Drone is going to pick up package
+        deliveryRepository.save(delivery);
+        this.context.currentDrone.setCurrentDelivery(delivery);
+        Whereabouts whereabouts = new Whereabouts(0, new Location(45, 7), 100, 300);
+        whereaboutsRepository.save(whereabouts);
+        this.context.currentDrone.setWhereabouts(whereabouts);
+        this.context.currentDrone.setBatteryLevel(100);
+        this.context.currentDrone.setDroneStatus(ACTIVE);
+        droneRepository.save(context.currentDrone);
     }
 
     @Then("The drone is added in the database")
@@ -230,4 +248,5 @@ public class DroneStepDefs {
         Drone drone  = droneRepository.findAll().iterator().next();
         assertNotEquals(this.context.currentDrone.getDroneID(),drone.getDroneID());
     }
+
 }

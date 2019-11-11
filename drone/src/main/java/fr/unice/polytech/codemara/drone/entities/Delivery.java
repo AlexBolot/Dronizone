@@ -13,7 +13,6 @@ public class Delivery {
     @GeneratedValue
     private long id;
     private long orderId;
-    private long itemId;
     @Embedded
     @AttributeOverrides(value = {
             @AttributeOverride(name = "latitude", column = @Column(name = "latitude_pickup")),
@@ -23,4 +22,9 @@ public class Delivery {
     @Embedded
     private Location target_location;
     private boolean notified = false;
+    private boolean picked_up = false;
+
+    public boolean mustNotify() {
+        return !notified && picked_up;
+    }
 }

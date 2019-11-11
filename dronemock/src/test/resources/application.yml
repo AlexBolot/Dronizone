@@ -1,0 +1,11 @@
+spring:
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    topic:
+      drones: drones
+      drones-pickups: drones-pickups
+      drones-commands: drones-commands
+      drones-deliveries: drones-deliveries
+      drones-deliveries-postponed: drones-deliveries-ostponed
+    consumer:
+      group-id: test

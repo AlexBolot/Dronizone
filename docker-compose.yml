@@ -20,14 +20,13 @@ services:
     logging:
       driver: json-file
     depends_on:
-      - postgres-warehouse
       - kafka
-    links:
-      - postgres-warehouse
+      - kafka-awaiter
+
     environment:
-      DATASOURCE_HOST: postgres-warehouse
       NOTIFICATION_HOST: notification
       DRONE_HOST: http://drone-server:8080
+      KAFKA_HOST: http://kafka:9092
 
 ############  ORDER  #################
 
@@ -53,11 +52,9 @@ services:
       DATASOURCE_USERNAME: dronazone
       DATASOURCE_PWD: dronazone
       WAREHOUSE_HOST: http://warehouse-server:8080
+      KAFKA_HOST: http://kafka:9092
     depends_on:
-      - postgres-order
       - kafka
-    links:
-      - postgres-order
 
 ############  DRONE  #################
 
@@ -72,93 +69,49 @@ services:
     expose:
       - 8083
     ports:
-      - 8083:8080
+      - 8083:8083
     networks:
       - dronazone-network
     logging:
       driver: json-file
     environment:
-      DATASOURCE_HOST: postgres-order
       NOTIFICATION_HOST: notification
-      ORDER_SERVICE_HOST: http://order-server
+      KAFKA_HOST: http://kafka:9092
+      ORDER_SERVICE_HOST: http://order-server:8080
+      EXTERNAL_DRONE_HOST: http://drone-mock
+
     depends_on:
-      - postgres-drone
+      #      - drone-mock
       - kafka
-    links:
-      - postgres-drone
 
-  ############  WATCHDOG  #################
+##########  STATISTICS  ###############
 
-  watchdog-server:
-    container_name: dronazone-watchdog-server
+  statistics-server:
+    container_name: dronazone-statistics-server
     build:
-      context: WatchDog
+      context: statistics-service
       dockerfile: Dockerfile
       args:
-        JAR_FILE: target/watchdog-1.0-SNAPSHOT.jar
-    image: dronazone-watchdog-server:latest
+        JAR_FILE: target/statistics-service-0.0.1-SNAPSHOT.jar
+    image: dronazone-statistics-server:latest
     expose:
-      - 8085
+      - 8087
     ports:
-      - 8085:8080
+      - 8087:8080
     networks:
       - dronazone-network
     logging:
       driver: json-file
     environment:
-      DATASOURCE_HOST: postgres-watchdog
-      NOTIFICATION_HOST: notification
-      ORDER_SERVICE_HOST: http://order-server
+      INFLUX_HOST: http://influxdb:8086
+      INFLUX_USERNAME: dronazone
+      INFLUX_PWD: dronazone
+      KAFKA_HOST: http://kafka:9092
     depends_on:
-      - postgres-watchdog
       - kafka
-    links:
-      - postgres-watchdog
+      - influxdb
 
-############  POSTGRES  #################
-
-  postgres-order:
-    container_name: postgres-dronazone-order
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-    networks:
-      - dronazone-network
-  postgres-warehouse:
-    container_name: postgres-dronazone-warehouse
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-    networks:
-      - dronazone-network
-  postgres-drone:
-    container_name: postgres-dronazone-drone
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-    networks:
-      - dronazone-network
-  postgres-watchdog:
-    container_name: postgres-dronazone-watchdog
-    image: postgres
-    environment:
-      POSTGRES_PASSWORD: dronazone
-      POSTGRES_USER: dronazone
-      POSTGRES_DB: dronazone
-    networks:
-      - dronazone-network
-    expose:
-      - 9000
-    ports:
-      - 9000:5432
-
-############  NOTIFICATION  #################
+  ############  NOTIFICATION  #################
 
   notification:
     container_name: dronazone-notification-mock-server
@@ -179,7 +132,7 @@ services:
     logging:
       driver: json-file
 
-############  DRONE MOCK  #################
+  ############  DRONE MOCK  #################
 
   drone-mock:
     container_name: dronazone-drone-mock-server
@@ -190,7 +143,7 @@ services:
         JAR_FILE: target/dronemock-0.0.1-SNAPSHOT.jar
     image: dronizone-mock-drone
     expose:
-      - 8080
+      - 8084
     ports:
       - 8084:8080
     depends_on:
@@ -202,29 +155,41 @@ services:
       driver: json-file
     environment:
       DRONE_SERVICE: http://drone-server:8080/
+      KAFKA_HOST: http://kafka:9092
 
-############  KAFKA  #################
+  ############  KAFKA  #################
 
   zookeeper:
     image: wurstmeister/zookeeper
-    container_name: zookeeper
+    container_name: dronazone-zookeeper
+    expose:
+      - 2181
     ports:
       - 2181:2181
-
+    networks:
+      - dronazone-network
   kafka:
     image: wurstmeister/kafka
-    container_name: kafka
+    container_name: dronazone-kafka
     expose:
       - 9092
+      - 9094
     ports:
+      - 9094:9094
       - 9092:9092
     depends_on:
       - zookeeper
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
-#      KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://127.0.0.1:9094
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "drones:1:1,delivery:1:1,orders:1:1"
+      KAFKA_CREATE_TOPICS: "drone-status:1:1,drone-commands:1:1,drone-delivery-update:1:1,order-create:1:1,order-delivered:1:1,order-cancelled:1:1,order-soon:1:1,order-packed:1:1"
+    networks:
+      - dronazone-network
+
   telegraf:
     image: telegraf:latest
     network_mode: "host"
@@ -238,7 +203,7 @@ services:
   ############  GRAFANA  #################
   grafana:
     image: grafana/grafana
-    container_name: grafana
+    container_name: dronazone-grafana
     restart: always
     expose:
       - 3000
@@ -250,11 +215,11 @@ services:
       - dronazone-network
       - monitoring
 
-############  INFLUX  #################
+  ############  INFLUX  #################
 
   influxdb:
     image: influxdb
-    container_name: influxdb
+    container_name: dronazone-influxdb
     restart: always
     expose:
       - 8086
@@ -265,8 +230,35 @@ services:
     networks:
       - dronazone-network
       - monitoring
+    environment:
+      INFLUXDB_DB: dronazone
+      INFLUXDB_ADMIN_ENABLED: "true"
+      INFLUXDB_ADMIN_USER: dronadmin
+      INFLUXDB_ADMIN_PASSWORD: dronadmin
+      INFLUXDB_USER: dronazone
+      INFLUXDB_USER_PASSWORD: dronazone
 
-
+#  start-holder:
+#    image: dadarek/wait-for-dependencies
+#    depends_on:
+#      - order-server
+#      - drone-server
+#      - drone-mock
+#      - notification
+#      - warehouse-server
+#    command: order-server:8080 drone-server:8080 drone-mock:8080 notification:8080 warehouse-server:8080
+#    networks:
+#      - dronazone-network
+#      - monitoring
+  kafka-awaiter:
+    image: dadarek/wait-for-dependencies
+    depends_on:
+      - kafka
+      - zookeeper
+    command: zookeeper:2181 kafka:9092
+    networks:
+      - dronazone-network
+      - monitoring
 networks:
   dronazone-network:
     driver: bridge

@@ -8,6 +8,6 @@ import fr.unice.polytech.codemara.drone.entities.DroneStatus;
 import org.springframework.data.repository.CrudRepository;
 
 public interface DroneRepository extends CrudRepository<Drone,Long> {
-    public Iterable<Drone> getDronesByDroneStatus(DroneStatus droneStatus);
-    public Iterable<Drone> getDroneByCurrentDelivery(Delivery delivery);
+    Iterable<Drone> getDronesByDroneStatus(DroneStatus droneStatus);
+    Iterable<Drone> getDroneByCurrentDelivery(Delivery delivery);
 }

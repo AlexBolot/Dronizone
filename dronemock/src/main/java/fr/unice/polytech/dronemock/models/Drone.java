@@ -1,24 +1,21 @@
 package fr.unice.polytech.dronemock.models;
 
-import fr.unice.polytech.dronemock.models.DroneStatus;
-import fr.unice.polytech.dronemock.models.Whereabouts;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-import javax.persistence.*;
+import java.util.Objects;
 
 @Data
 @RequiredArgsConstructor
 public class Drone {
-    @Id
-    @GeneratedValue
+
     private long droneID;
+
     private double batteryLevel;
+
     private DroneStatus droneStatus;
-    @ManyToOne
+
     private Whereabouts whereabouts;
-    @OneToOne
-    public Delivery currentDelivery;
 
     public Drone(double batteryLevel) {
         this.batteryLevel = batteryLevel;
@@ -26,5 +23,24 @@ public class Drone {
 
     public boolean is(DroneStatus status) {
         return droneStatus == status;
+    }
+
+    private double distanceToPickup = 0;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Drone drone = (Drone) o;
+        return droneID == drone.droneID &&
+                Double.compare(drone.batteryLevel, batteryLevel) == 0 &&
+                Double.compare(drone.distanceToPickup, distanceToPickup) == 0 &&
+                droneStatus == drone.droneStatus &&
+                whereabouts.equals(drone.whereabouts);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(droneID, batteryLevel, droneStatus, whereabouts, distanceToPickup);
     }
 }

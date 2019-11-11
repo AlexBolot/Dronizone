@@ -10,7 +10,12 @@ spring:
   kafka:
     bootstrap-servers: ${spring.embedded.kafka.brokers}
     topic:
-      drones: drones
-      deliveryPostponed: deliveryPostponed
+      drone-commands: drone-commands
+      drone-status: drone-status
+      drone-delivery-update: drone-delivery-update
+      order-delivered: order-delivered
+      order-packed: order-packed
+      order-soon: order-soon
+      order-cancelled: order-cancelled
     consumer:
       group-id: test
