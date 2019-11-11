@@ -6,5 +6,3 @@ mvn clean install -DskipTests
 cd ../dronemock
 mvn clean install -DskipTests
 cd ../
-docker-compose up -d --build
-docker-compose down
